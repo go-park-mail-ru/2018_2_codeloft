@@ -109,7 +109,6 @@ func (db *BD) generateUsers(num int){
 
 func init(){
 	dataBase.generateUsers(20)
-	//fmt.Println(dataBase.users)
 }
 
 func main() {
@@ -138,28 +137,7 @@ func main() {
 
 			w.Write(resp)
 		case http.MethodPost:
-			////email, exist := r.Form["email"]
-			//email := r.FormValue("email")
-			////u,e := dataBase.getUserByEmail(email[0])
-			//u,e := dataBase.getUserByEmail(email)
-			//if e{
-			//	w.Write(generateError(MyError{"User Already exist"}))
-			//	return
-			//}
-			////if !exist {
-			////	w.Write(generateError(MyError{"NoGetParam Email"}))
-			////	return
-			////}
-			////password, exist := r.Form["password"]
-			//password := r.FormValue("password")
-			////if !exist {
-			////	w.Write(generateError(MyError{"NoGetParam password"}))
-			////	return
-			////}
-			////if u.Password != password {
-			////	w.Write(generateError(MyError{"WrongPassword"}))
-			////	return
-			////}
+
 			body, err := ioutil.ReadAll(r.Body)
 
 			if err != nil {
@@ -167,19 +145,20 @@ func main() {
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
-			var u User
+			var u struct{
+				Login string `json:"login"`
+				Password string `json:"password"`
+				Email    string `json:"email"`
+			}
 			err = json.Unmarshal(body, &u)
 			if _,exist := dataBase.getUserByLogin(u.Login); exist {
 				w.Write(generateError(MyError{"User already exist"}))
 				return
 			}
-			u.Id = dataBase.lastid
-			dataBase.saveUser(u)
+			var user User = User{Id:dataBase.lastid, Login:u.Login,Email: u.Email, Password: u.Password, Score: 0}
+			dataBase.saveUser(user)
 
-
-			//u = User{dataBase.lastid,email,password,20,0}
-			//dataBase.saveUser(u)
-			res , err := json.Marshal(&u)
+			res , err := json.Marshal(&user)
 			if err != nil{
 				log.Println("error while Marshaling in /user")
 				w.WriteHeader(http.StatusInternalServerError)
@@ -193,12 +172,11 @@ func main() {
 		w.Header().Set("content-type", "application/json")
 		switch r.Method{
 		case http.MethodGet:
-			cookie, err := r.Cookie("session_id")
+			_, err := r.Cookie("session_id")
 			if err != nil {
 				w.WriteHeader(http.StatusUnauthorized)
 			}
 			w.WriteHeader(http.StatusOK)
-			fmt.Fprintf(w,"%v", cookie)
 		case http.MethodPost:
 			body, err := ioutil.ReadAll(r.Body)
 
@@ -221,36 +199,11 @@ func main() {
 			cookie := http.Cookie{
 				Name: "session_id",
 				Value: u.Login+"testCookie"+u.Password,
-				Expires:time.Now().Add(1*time.Minute),
+				Expires:time.Now().Add(30*24*time.Hour),
 				HttpOnly: false,
 			}
 			http.SetCookie(w,&cookie)
 			w.WriteHeader(http.StatusOK)
-			fmt.Fprintf(w,"okey post cookie:%v",cookie)
-			//err := r.ParseForm()
-			//if err != nil {
-			//	w.WriteHeader(http.StatusBadRequest)
-			//	//w.Write([]byte("cant parse form"))
-			//
-			//}
-			//email := r.FormValue("email")
-			//u,e := dataBase.getUserByEmail(email)
-			//if !e{
-			//	w.Write(generateError(MyError{"DoNotExist"}))
-			//	return
-			//}
-			//password := r.FormValue("password")
-			//if u.Password != password {
-			//	w.Write(generateError(MyError{"WrongPassword"}))
-			//	return
-			//}
-			//cookie := &http.Cookie{
-			//	Name:  "session_id",
-			//	Value: "testCookie",
-			//}
-			//http.SetCookie(w,cookie)
-			//w.WriteHeader(http.StatusOK)
-			//fmt.Fprintf(w,"okey post cookie:%v",cookie)
 		}
 
 	})
@@ -259,9 +212,7 @@ func main() {
 
 		w.Header().Set("content-type", "application/json")
 		url := r.URL.Path
-		//fmt.Fprintf(w,"url: %s\n",url)
 		url = strings.Trim(url,"/user/")
-		//fmt.Fprintf(w,"url: %s\n",url)
 		id,err := strconv.Atoi(url)
 		if err != nil {
 			w.Write(generateError(MyError{"Bad URL"}))
