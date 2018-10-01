@@ -68,6 +68,14 @@ func (bd *BD) saveUser(u User) {
 	bd.lastid++
 }
 
+func (db *BD) deleteUser(u User){
+	db.users = append(db.users[:u.Id], db.users[u.Id+1:]...)
+}
+
+func (db *BD) updateUser (id int,newUser User){
+	db.users[id] = newUser
+}
+
 func (bd *BD) getUserByEmail(email string) (User,bool){
 	for _ , u := range bd.users {
 		if u.Email == email {
@@ -114,7 +122,7 @@ func init(){
 func main() {
 	//generateUsers(20)
 
-	fmt.Println("AUTH_URL:",AUTH_URL)
+	//fmt.Println("AUTH_URL:",AUTH_URL)
 
 	http.HandleFunc("/",func(w http.ResponseWriter, r *http.Request){
 		w.Write([]byte("this is backend server API\n"))
@@ -126,9 +134,10 @@ func main() {
 	http.HandleFunc("/user", func(w http.ResponseWriter, r *http.Request){
 
 		w.Header().Set("content-type", "application/json")
-		switch r.Method {
-		case http.MethodGet:
 
+		switch r.Method {
+
+		case http.MethodGet:
 			slice := make([]User, 0, 20)
 			for _, val := range dataBase.users {
 				slice = append(slice, val)
@@ -136,8 +145,8 @@ func main() {
 			resp, _ := json.Marshal(&slice)
 
 			w.Write(resp)
-		case http.MethodPost:
 
+		case http.MethodPost:
 			body, err := ioutil.ReadAll(r.Body)
 
 			if err != nil {
@@ -165,21 +174,98 @@ func main() {
 				return
 			}
 			w.Write(res)
+
+		case http.MethodDelete:
+			body, err := ioutil.ReadAll(r.Body)
+
+			if err != nil {
+				log.Println("error while reading body in /user")
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			var u struct{
+				Login string `json:"login"`
+				Password string `json:"password"`
+			}
+			err = json.Unmarshal(body, &u)
+			user,exist := dataBase.getUserByLogin(u.Login);
+			if !exist {
+				w.Write(generateError(MyError{"User does not exist"}))
+				return
+			}
+			dataBase.deleteUser(user)
+			w.WriteHeader(http.StatusOK)
+
+		case http.MethodPut:
+			_, err := r.Cookie("session_id")
+			if err != nil {
+				w.WriteHeader(http.StatusUnauthorized)
+				w.Write(generateError(MyError{"authorization required"}))
+				return
+			}
+
+
+			body, err := ioutil.ReadAll(r.Body)
+
+			if err != nil {
+				log.Println("error while reading body in /user")
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			var u struct{
+				Login string `json:"login"`
+				NewPassword string `json:"password,omitempty"`
+				Password string `json:"old_password"`
+				Email    string `json:"email,omitempty"`
+				Score int `json:"score,omitempty"`
+			}
+			err = json.Unmarshal(body, &u)
+			fmt.Println(u)
+			user,exist := dataBase.getUserByLogin(u.Login);
+			if !exist {
+				w.Write(generateError(MyError{"User does not exist"}))
+				return
+			}
+			if user.Password != u.Password{
+				w.Write(generateError(MyError{"wrong password"}))
+				return
+			}
+			var newPassword string = user.Password
+			var newEmail string = user.Email
+			var newScore int = user.Score
+			if u.Password != "" {
+				newPassword = u.NewPassword
+			}
+			if u.Email != "" {
+				newEmail = u.Email
+			}
+			if u.Score != 0 {
+				newScore = u.Score
+			}
+
+			newUser := User{user.Id,u.Login,newPassword,newEmail,newScore}
+			dataBase.updateUser(user.Id,newUser)
+			w.WriteHeader(http.StatusOK)
 		}
 	})
+
+
 
 	http.HandleFunc("/session", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("content-type", "application/json")
 		switch r.Method{
+
 		case http.MethodGet:
 			_, err := r.Cookie("session_id")
 			if err != nil {
 				w.WriteHeader(http.StatusUnauthorized)
+				return
 			}
 			w.WriteHeader(http.StatusOK)
+
+
 		case http.MethodPost:
 			body, err := ioutil.ReadAll(r.Body)
-
 			if err != nil {
 				log.Println("error while reading body in /session")
 				w.WriteHeader(http.StatusInternalServerError)
@@ -204,9 +290,22 @@ func main() {
 			}
 			http.SetCookie(w,&cookie)
 			w.WriteHeader(http.StatusOK)
+
+
+		case http.MethodDelete:
+			cookie, err := r.Cookie("session_id")
+			if err != nil {
+				w.WriteHeader(http.StatusUnauthorized)
+				return
+			}
+			cookie.Expires = time.Now()
+			http.SetCookie(w, cookie)
+			w.WriteHeader(http.StatusOK)
 		}
 
 	})
+
+
 
 	http.HandleFunc("/user/", func(w http.ResponseWriter, r *http.Request) {
 
@@ -231,6 +330,7 @@ func main() {
 		}
 		w.Write(user)
 	})
+
 
 
 	http.HandleFunc("/vkapi", func(w http.ResponseWriter, r *http.Request){
