@@ -55,12 +55,14 @@ var users []User = make([]User,0,20)
 
 type BD struct {
 	users []User
+	lastid int
 }
 
-var dataBase BD =BD{make([]User,0,20)}
+var dataBase BD =BD{make([]User,0,20),0}
 
 func (bd *BD) saveUser(u User) {
 	bd.users = append(bd.users, u)
+	bd.lastid++
 }
 
 func (bd *BD) getUserByEmail(email string) (User,bool){
@@ -95,6 +97,7 @@ func generateUsers(num int){
 func init(){
 	generateUsers(20)
 	dataBase.users = users
+	dataBase.lastid = 20
 }
 
 func main() {
@@ -113,7 +116,8 @@ func main() {
 		w.Header().Set("content-type", "application/json")
 		switch r.Method {
 		case http.MethodGet:
-			slice := make([]User, 0, 2)
+
+			slice := make([]User, 0, 20)
 			for _, val := range users {
 				slice = append(slice, val)
 			}
@@ -143,8 +147,8 @@ func main() {
 			//	w.Write(generateError(MyError{"WrongPassword"}))
 			//	return
 			//}
-			u = User{21,email,password,20,0}
-			dataBase.users = append(dataBase.users, u)
+			u = User{dataBase.lastid,email,password,20,0}
+			dataBase.saveUser(u)
 			res , err := json.Marshal(&u)
 			if err != nil{
 				log.Println("error while Marshaling in /user")
