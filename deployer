@@ -1,0 +1,4 @@
+all:
+	now rm go-park-mail-ru-2018_2_codeloft
+	now https://github.com/go-park-mail-ru/2018_2_codeloft/tree/testing
+	#now alias go-park-mail-ru-2018_2_codeloft codeloft-backend.now.sh
