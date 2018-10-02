@@ -73,12 +73,34 @@ func main() {
 		switch r.Method {
 
 		case http.MethodGet:
-			slice := make([]User, 0, 20)
-			for _, val := range dataBase.users {
+			err := r.ParseForm()
+			if err != nil {
+				w.Write(generateError(MyError{"error while parsing form"}))
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+			page,err := strconv.Atoi(r.FormValue("page"))
+			if err != nil {
+				page = 1
+			}
+			pageSize ,err := strconv.Atoi(r.FormValue("page_size"))
+			if err != nil {
+				pageSize = 0
+			}
+			if page <= 0 {
+				page = 1
+			}
+			if pageSize <=0 {
+				pageSize = 5
+			}
+			slice := make([]User, 0, pageSize)
+			begin := (page-1)*pageSize
+			end := begin + pageSize
+			for _, val := range dataBase.users[begin:end] {
 				slice = append(slice, val)
 			}
 			resp, _ := json.Marshal(&slice)
-
+			w.WriteHeader(http.StatusOK)
 			w.Write(resp)
 
 		case http.MethodPost:
@@ -95,6 +117,11 @@ func main() {
 				Email    string `json:"email"`
 			}
 			err = json.Unmarshal(body, &u)
+			if err != nil {
+				w.Write(generateError(MyError{"wrong requst format"}))
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
 			if _,exist := dataBase.getUserByLogin(u.Login); exist {
 				w.Write(generateError(MyError{"User already exist"}))
 				return
@@ -123,6 +150,11 @@ func main() {
 				Password string `json:"password"`
 			}
 			err = json.Unmarshal(body, &u)
+			if err != nil {
+				w.Write(generateError(MyError{"wrong requst format"}))
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
 			user,exist := dataBase.getUserByLogin(u.Login);
 			if !exist {
 				w.Write(generateError(MyError{"User does not exist"}))
@@ -155,7 +187,11 @@ func main() {
 				Score int `json:"score,omitempty"`
 			}
 			err = json.Unmarshal(body, &u)
-			fmt.Println(u)
+			if err != nil {
+				w.Write(generateError(MyError{"wrong requst format"}))
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
 			user,exist := dataBase.getUserByLogin(u.Login);
 			if !exist {
 				w.Write(generateError(MyError{"User does not exist"}))
@@ -208,6 +244,11 @@ func main() {
 			}
 			var u User
 			err = json.Unmarshal(body, &u)
+			if err != nil {
+				w.Write(generateError(MyError{"wrong requst format"}))
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
 			dbUser,exist := dataBase.getUserByLogin(u.Login)
 			if !exist {
 				w.Write(generateError(MyError{"User does not exist"}))
