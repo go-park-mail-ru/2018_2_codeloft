@@ -1,9 +1,9 @@
 package main
 
 import (
+	"2018_2_codeloft/validator"
 	"encoding/json"
 	"fmt"
-
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/vk"
 	"io/ioutil"
@@ -15,18 +15,18 @@ import (
 )
 
 const (
-	PORT = ":8080"
-	APP_ID     = "6707792"
-	APP_KEY    = "gQuY2Y2aFVdy9tsIwOAL"
+	PORT    = ":8080"
+	APP_ID  = "6707792"
+	APP_KEY = "gQuY2Y2aFVdy9tsIwOAL"
 	//APP_SECRET = []byte("fdba0e9ffdba0e9ffdba0e9fc8fddc54cfffdbafdba0e9fa60b49899f33652ed2c03c5f")
-	APP_DISPLAY = "page"
+	APP_DISPLAY  = "page"
 	APP_REDIRECT = "http://127.0.0.1" + PORT
 )
 
 var (
 	APP_SECRET = "fdba0e9ffdba0e9ffdba0e9fc8fddc54cfffdbafdba0e9fa60b49899f33652ed2c03c5f"
-	AUTH_URL    = fmt.Sprintf("https://oauth.vk.com/authorize?client_id=%s&display=%s&redirect_uri=%s",APP_ID, APP_DISPLAY,APP_REDIRECT)
-	API_URL = ""
+	AUTH_URL   = fmt.Sprintf("https://oauth.vk.com/authorize?client_id=%s&display=%s&redirect_uri=%s", APP_ID, APP_DISPLAY, APP_REDIRECT)
+	API_URL    = ""
 )
 
 type MyError struct {
@@ -43,14 +43,14 @@ func generateError(err MyError) []byte {
 }
 
 type User struct {
-	Id int `json:"user_id,omitempty"`
-	Login string `json:"login"`
+	Id       int    `json:"user_id,omitempty"`
+	Login    string `json:"login"`
 	Password string `json:"-"`
 	Email    string `json:"email"`
-	Score    int  `json:"score"`
+	Score    int    `json:"score"`
 }
 
-func init(){
+func init() {
 	dataBase.generateUsers(20)
 }
 
@@ -59,14 +59,14 @@ func main() {
 
 	//fmt.Println("AUTH_URL:",AUTH_URL)
 
-	http.HandleFunc("/",func(w http.ResponseWriter, r *http.Request){
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("this is backend server API\n"))
 		//fmt.Fprintf(w,"<a href=%s>click</a>",AUTH_URL)
 		//http.Redirect(w,r,AUTH_URL,http.StatusSeeOther)
 
 	})
 
-	http.HandleFunc("/user", func(w http.ResponseWriter, r *http.Request){
+	http.HandleFunc("/user", func(w http.ResponseWriter, r *http.Request) {
 
 		w.Header().Set("content-type", "application/json")
 
@@ -79,22 +79,22 @@ func main() {
 				w.WriteHeader(http.StatusBadRequest)
 				return
 			}
-			page,err := strconv.Atoi(r.FormValue("page"))
+			page, err := strconv.Atoi(r.FormValue("page"))
 			if err != nil {
 				page = 1
 			}
-			pageSize ,err := strconv.Atoi(r.FormValue("page_size"))
+			pageSize, err := strconv.Atoi(r.FormValue("page_size"))
 			if err != nil {
 				pageSize = 0
 			}
 			if page <= 0 {
 				page = 1
 			}
-			if pageSize <=0 {
+			if pageSize <= 0 {
 				pageSize = 5
 			}
 			slice := make([]User, 0, pageSize)
-			begin := (page-1)*pageSize
+			begin := (page - 1) * pageSize
 			end := begin + pageSize
 			for _, val := range dataBase.users[begin:end] {
 				slice = append(slice, val)
@@ -111,8 +111,8 @@ func main() {
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
-			var u struct{
-				Login string `json:"login"`
+			var u struct {
+				Login    string `json:"login"`
 				Password string `json:"password"`
 				Email    string `json:"email"`
 			}
@@ -122,15 +122,33 @@ func main() {
 				w.WriteHeader(http.StatusBadRequest)
 				return
 			}
-			if _,exist := dataBase.getUserByLogin(u.Login); exist {
+			if _, exist := dataBase.getUserByLogin(u.Login); exist {
 				w.Write(generateError(MyError{"User already exist"}))
 				return
 			}
-			var user User = User{Id:dataBase.lastid, Login:u.Login,Email: u.Email, Password: u.Password, Score: 0}
+			err = validator.ValidateEmail(u.Email)
+			if err != nil {
+				w.Write(generateError(MyError{"bad email"}))
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+			err = validator.ValidateLogin(u.Login)
+			if err != nil {
+				w.Write(generateError(MyError{"bad login"}))
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+			err = validator.ValidatePassword(u.Password)
+			if err != nil {
+				w.Write(generateError(MyError{"bad password"}))
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+			var user User = User{Id: dataBase.lastid, Login: u.Login, Email: u.Email, Password: u.Password, Score: 0}
 			dataBase.saveUser(user)
 
-			res , err := json.Marshal(&user)
-			if err != nil{
+			res, err := json.Marshal(&user)
+			if err != nil {
 				log.Println("error while Marshaling in /user")
 				w.WriteHeader(http.StatusInternalServerError)
 				return
@@ -145,8 +163,8 @@ func main() {
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
-			var u struct{
-				Login string `json:"login"`
+			var u struct {
+				Login    string `json:"login"`
 				Password string `json:"password"`
 			}
 			err = json.Unmarshal(body, &u)
@@ -155,7 +173,7 @@ func main() {
 				w.WriteHeader(http.StatusBadRequest)
 				return
 			}
-			user,exist := dataBase.getUserByLogin(u.Login);
+			user, exist := dataBase.getUserByLogin(u.Login)
 			if !exist {
 				w.Write(generateError(MyError{"User does not exist"}))
 				return
@@ -171,7 +189,6 @@ func main() {
 				return
 			}
 
-
 			body, err := ioutil.ReadAll(r.Body)
 
 			if err != nil {
@@ -179,12 +196,12 @@ func main() {
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
-			var u struct{
-				Login string `json:"login"`
+			var u struct {
+				Login       string `json:"login"`
 				NewPassword string `json:"password,omitempty"`
-				Password string `json:"old_password"`
-				Email    string `json:"email,omitempty"`
-				Score int `json:"score,omitempty"`
+				Password    string `json:"old_password"`
+				Email       string `json:"email,omitempty"`
+				Score       int    `json:"score,omitempty"`
 			}
 			err = json.Unmarshal(body, &u)
 			if err != nil {
@@ -192,12 +209,12 @@ func main() {
 				w.WriteHeader(http.StatusBadRequest)
 				return
 			}
-			user,exist := dataBase.getUserByLogin(u.Login);
+			user, exist := dataBase.getUserByLogin(u.Login)
 			if !exist {
 				w.Write(generateError(MyError{"User does not exist"}))
 				return
 			}
-			if user.Password != u.Password{
+			if user.Password != u.Password {
 				w.Write(generateError(MyError{"wrong password"}))
 				return
 			}
@@ -214,17 +231,15 @@ func main() {
 				newScore = u.Score
 			}
 
-			newUser := User{user.Id,u.Login,newPassword,newEmail,newScore}
-			dataBase.updateUser(user.Id,newUser)
+			newUser := User{user.Id, u.Login, newPassword, newEmail, newScore}
+			dataBase.updateUser(user.Id, newUser)
 			w.WriteHeader(http.StatusOK)
 		}
 	})
 
-
-
 	http.HandleFunc("/session", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("content-type", "application/json")
-		switch r.Method{
+		switch r.Method {
 
 		case http.MethodGet:
 			_, err := r.Cookie("session_id")
@@ -233,7 +248,6 @@ func main() {
 				return
 			}
 			w.WriteHeader(http.StatusOK)
-
 
 		case http.MethodPost:
 			body, err := ioutil.ReadAll(r.Body)
@@ -249,24 +263,23 @@ func main() {
 				w.WriteHeader(http.StatusBadRequest)
 				return
 			}
-			dbUser,exist := dataBase.getUserByLogin(u.Login)
+			dbUser, exist := dataBase.getUserByLogin(u.Login)
 			if !exist {
 				w.Write(generateError(MyError{"User does not exist"}))
 				return
 			}
-			if dbUser.Password != u.Password{
+			if dbUser.Password != u.Password {
 				w.Write(generateError(MyError{"wrong password"}))
 				return
 			}
 			cookie := http.Cookie{
-				Name: "session_id",
-				Value: u.Login+"testCookie"+u.Password,
-				Expires:time.Now().Add(30*24*time.Hour),
+				Name:     "session_id",
+				Value:    u.Login + "testCookie" + u.Password,
+				Expires:  time.Now().Add(30 * 24 * time.Hour),
 				HttpOnly: false,
 			}
-			http.SetCookie(w,&cookie)
+			http.SetCookie(w, &cookie)
 			w.WriteHeader(http.StatusOK)
-
 
 		case http.MethodDelete:
 			cookie, err := r.Cookie("session_id")
@@ -281,24 +294,22 @@ func main() {
 
 	})
 
-
-
 	http.HandleFunc("/user/", func(w http.ResponseWriter, r *http.Request) {
 
 		w.Header().Set("content-type", "application/json")
 		url := r.URL.Path
-		url = strings.Trim(url,"/user/")
-		id,err := strconv.Atoi(url)
+		url = strings.Trim(url, "/user/")
+		id, err := strconv.Atoi(url)
 		if err != nil {
 			w.Write(generateError(MyError{"Bad URL"}))
 			w.WriteHeader(http.StatusBadRequest)
 		}
-		u,exist := dataBase.getUserByID(id)
+		u, exist := dataBase.getUserByID(id)
 		if !exist {
 			w.Write(generateError(MyError{"user does not exist"}))
 			return
 		}
-		user,err := json.Marshal(&u)
+		user, err := json.Marshal(&u)
 		if err != nil {
 			log.Println("error while Marshaling in /user/")
 			w.WriteHeader(http.StatusInternalServerError)
@@ -307,9 +318,7 @@ func main() {
 		w.Write(user)
 	})
 
-
-
-	http.HandleFunc("/vkapi", func(w http.ResponseWriter, r *http.Request){
+	http.HandleFunc("/vkapi", func(w http.ResponseWriter, r *http.Request) {
 		//http.Redirect(w,r,AUTH_URL,http.StatusSeeOther)
 
 		ctx := r.Context()
@@ -339,11 +348,8 @@ func main() {
 	})
 	fmt.Println("starting server on http://127.0.0.1:8080")
 
-
-
 	http.ListenAndServe(":8080", nil)
 }
-
 
 // curl -X POST -d "email=123@mail.ru&passowrd=123" http://127.0.0.1:8080/user
 // curl -X POST -d "email=123@mail.ru&passowrd=123" http://127.0.0.1:8080/session
