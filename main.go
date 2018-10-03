@@ -75,8 +75,8 @@ func main() {
 		case http.MethodGet:
 			err := r.ParseForm()
 			if err != nil {
-				w.Write(generateError(MyError{"error while parsing form"}))
 				w.WriteHeader(http.StatusBadRequest)
+				w.Write(generateError(MyError{"error while parsing form"}))
 				return
 			}
 			page, err := strconv.Atoi(r.FormValue("page"))
@@ -102,7 +102,7 @@ func main() {
 			resp, _ := json.Marshal(&slice)
 			w.WriteHeader(http.StatusOK)
 			w.Write(resp)
-
+			return
 		case http.MethodPost:
 			body, err := ioutil.ReadAll(r.Body)
 
@@ -118,30 +118,33 @@ func main() {
 			}
 			err = json.Unmarshal(body, &u)
 			if err != nil {
-				w.Write(generateError(MyError{"wrong requst format"}))
 				w.WriteHeader(http.StatusBadRequest)
+				w.Write(generateError(MyError{"wrong requst format"}))
 				return
 			}
 			if _, exist := dataBase.getUserByLogin(u.Login); exist {
+				w.WriteHeader(http.StatusBadRequest)
 				w.Write(generateError(MyError{"User already exist"}))
 				return
 			}
 			err = validator.ValidateEmail(u.Email)
 			if err != nil {
-				w.Write(generateError(MyError{"bad email"}))
 				w.WriteHeader(http.StatusBadRequest)
+				w.Write(generateError(MyError{"bad email"}))
 				return
 			}
 			err = validator.ValidateLogin(u.Login)
 			if err != nil {
-				w.Write(generateError(MyError{"bad login"}))
+
 				w.WriteHeader(http.StatusBadRequest)
+				w.Write(generateError(MyError{"bad login"}))
 				return
 			}
 			err = validator.ValidatePassword(u.Password)
 			if err != nil {
-				w.Write(generateError(MyError{"bad password"}))
+				fmt.Println(err, u)
 				w.WriteHeader(http.StatusBadRequest)
+				w.Write(generateError(MyError{"bad password"}))
 				return
 			}
 			var user User = User{Id: dataBase.lastid, Login: u.Login, Email: u.Email, Password: u.Password, Score: 0}
@@ -169,14 +172,14 @@ func main() {
 			}
 			err = json.Unmarshal(body, &u)
 			if err != nil {
-				w.Write(generateError(MyError{"wrong requst format"}))
 				w.WriteHeader(http.StatusBadRequest)
+				w.Write(generateError(MyError{"wrong requst format"}))
 				return
 			}
 			err = validator.ValidateLogin(u.Login)
 			if err != nil {
-				w.Write(generateError(MyError{"bad login"}))
 				w.WriteHeader(http.StatusBadRequest)
+				w.Write(generateError(MyError{"bad login"}))
 				return
 			}
 			user, exist := dataBase.getUserByLogin(u.Login)
@@ -211,23 +214,25 @@ func main() {
 			}
 			err = json.Unmarshal(body, &u)
 			if err != nil {
-				w.Write(generateError(MyError{"wrong requst format"}))
 				w.WriteHeader(http.StatusBadRequest)
+				w.Write(generateError(MyError{"wrong requst format"}))
 				return
 			}
 			err = validator.ValidateLogin(u.Login)
 			if err != nil {
-				w.Write(generateError(MyError{"bad login"}))
 				w.WriteHeader(http.StatusBadRequest)
+				w.Write(generateError(MyError{"bad login"}))
 				return
 			}
 			user, exist := dataBase.getUserByLogin(u.Login)
 			if !exist {
+				w.WriteHeader(http.StatusBadRequest)
 				w.Write(generateError(MyError{"User does not exist"}))
 				return
 			}
 
 			if user.Password != u.Password {
+				w.WriteHeader(http.StatusBadRequest)
 				w.Write(generateError(MyError{"wrong password"}))
 				return
 			}
@@ -239,8 +244,8 @@ func main() {
 			}
 			err = validator.ValidatePassword(newPassword)
 			if err != nil {
-				w.Write(generateError(MyError{"bad New password"}))
 				w.WriteHeader(http.StatusBadRequest)
+				w.Write(generateError(MyError{"bad New password"}))
 				return
 			}
 			if u.Email != "" {
@@ -248,8 +253,8 @@ func main() {
 			}
 			err = validator.ValidateEmail(newEmail)
 			if err != nil {
-				w.Write(generateError(MyError{"bad New email"}))
 				w.WriteHeader(http.StatusBadRequest)
+				w.Write(generateError(MyError{"bad New email"}))
 				return
 			}
 			if u.Score != 0 {
@@ -284,22 +289,24 @@ func main() {
 			var u User
 			err = json.Unmarshal(body, &u)
 			if err != nil {
-				w.Write(generateError(MyError{"wrong requst format"}))
 				w.WriteHeader(http.StatusBadRequest)
+				w.Write(generateError(MyError{"wrong requst format"}))
 				return
 			}
 			err = validator.ValidateLogin(u.Login)
 			if err != nil {
-				w.Write(generateError(MyError{"bad login"}))
 				w.WriteHeader(http.StatusBadRequest)
+				w.Write(generateError(MyError{"bad login"}))
 				return
 			}
 			dbUser, exist := dataBase.getUserByLogin(u.Login)
 			if !exist {
+				w.WriteHeader(http.StatusBadRequest)
 				w.Write(generateError(MyError{"User does not exist"}))
 				return
 			}
 			if dbUser.Password != u.Password {
+				w.WriteHeader(http.StatusBadRequest)
 				w.Write(generateError(MyError{"wrong password"}))
 				return
 			}
@@ -332,12 +339,13 @@ func main() {
 		url = strings.Trim(url, "/user/")
 		id, err := strconv.Atoi(url)
 		if err != nil {
-			w.Write(generateError(MyError{"Bad URL"}))
 			w.WriteHeader(http.StatusBadRequest)
+			w.Write(generateError(MyError{"Bad URL"}))
 			return
 		}
 		u, exist := dataBase.getUserByID(id)
 		if !exist {
+			w.WriteHeader(http.StatusBadRequest)
 			w.Write(generateError(MyError{"user does not exist"}))
 			return
 		}
