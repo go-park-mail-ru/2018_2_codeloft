@@ -1,7 +1,6 @@
 package main
 
 import (
-	"2018_2_codeloft/validator"
 	"encoding/json"
 	"fmt"
 	"golang.org/x/oauth2"
@@ -12,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"validator"
 )
 
 const (
