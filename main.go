@@ -173,6 +173,12 @@ func main() {
 				w.WriteHeader(http.StatusBadRequest)
 				return
 			}
+			err = validator.ValidateLogin(u.Login)
+			if err != nil {
+				w.Write(generateError(MyError{"bad login"}))
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
 			user, exist := dataBase.getUserByLogin(u.Login)
 			if !exist {
 				w.Write(generateError(MyError{"User does not exist"}))
@@ -209,11 +215,18 @@ func main() {
 				w.WriteHeader(http.StatusBadRequest)
 				return
 			}
+			err = validator.ValidateLogin(u.Login)
+			if err != nil {
+				w.Write(generateError(MyError{"bad login"}))
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
 			user, exist := dataBase.getUserByLogin(u.Login)
 			if !exist {
 				w.Write(generateError(MyError{"User does not exist"}))
 				return
 			}
+
 			if user.Password != u.Password {
 				w.Write(generateError(MyError{"wrong password"}))
 				return
@@ -224,8 +237,20 @@ func main() {
 			if u.Password != "" {
 				newPassword = u.NewPassword
 			}
+			err = validator.ValidatePassword(newPassword)
+			if err != nil {
+				w.Write(generateError(MyError{"bad New password"}))
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
 			if u.Email != "" {
 				newEmail = u.Email
+			}
+			err = validator.ValidateEmail(newEmail)
+			if err != nil {
+				w.Write(generateError(MyError{"bad New email"}))
+				w.WriteHeader(http.StatusBadRequest)
+				return
 			}
 			if u.Score != 0 {
 				newScore = u.Score
@@ -260,6 +285,12 @@ func main() {
 			err = json.Unmarshal(body, &u)
 			if err != nil {
 				w.Write(generateError(MyError{"wrong requst format"}))
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+			err = validator.ValidateLogin(u.Login)
+			if err != nil {
+				w.Write(generateError(MyError{"bad login"}))
 				w.WriteHeader(http.StatusBadRequest)
 				return
 			}
@@ -303,6 +334,7 @@ func main() {
 		if err != nil {
 			w.Write(generateError(MyError{"Bad URL"}))
 			w.WriteHeader(http.StatusBadRequest)
+			return
 		}
 		u, exist := dataBase.getUserByID(id)
 		if !exist {
