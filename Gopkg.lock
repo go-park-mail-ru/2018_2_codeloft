@@ -38,7 +38,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:310fa27ce143b474c8ce645ddb5cb35e09894367edf1761348c9ed1856e2b24b"
+  digest = "1:cc25ec83ed6874e8f42122f25a9ce395fa666d5b1cb9026d96d60d5e85e085c0"
   name = "golang.org/x/oauth2"
   packages = [
     ".",
@@ -46,7 +46,7 @@
     "vk",
   ]
   pruneopts = "UT"
-  revision = "d2e6202438beef2727060aa7cabdd924d92ebfd9"
+  revision = "c57b0facaced709681d9f90397429b9430a74754"
 
 [[projects]]
   digest = "1:6247f76e55a1e1a5c19a81e2d4b4dff6730461eeb5bbb0a16dd4a8ec8637ee93"
