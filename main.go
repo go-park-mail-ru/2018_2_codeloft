@@ -17,7 +17,8 @@ func init() {
 }
 
 func main() {
-	http.HandleFunc("/user",handlers.UserHandler)
+	http.HandleFunc("/", handlers.MainPage)
+	http.HandleFunc("/user", handlers.UserHandler)
 	http.HandleFunc("/session", handlers.SessionHandler)
 	http.HandleFunc("/user/", handlers.UserById)
 
