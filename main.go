@@ -1,33 +1,19 @@
 package main
 
 import (
+	"2018_2_codeloft/database"
+	"2018_2_codeloft/models"
+	"2018_2_codeloft/validator"
 	"encoding/json"
 	"fmt"
-	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/vk"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
-	"validator"
 )
 
-const (
-	PORT    = ":8080"
-	APP_ID  = "6707792"
-	APP_KEY = "gQuY2Y2aFVdy9tsIwOAL"
-	//APP_SECRET = []byte("fdba0e9ffdba0e9ffdba0e9fc8fddc54cfffdbafdba0e9fa60b49899f33652ed2c03c5f")
-	APP_DISPLAY  = "page"
-	APP_REDIRECT = "http://127.0.0.1" + PORT
-)
-
-var (
-	APP_SECRET = "fdba0e9ffdba0e9ffdba0e9fc8fddc54cfffdbafdba0e9fa60b49899f33652ed2c03c5f"
-	AUTH_URL   = fmt.Sprintf("https://oauth.vk.com/authorize?client_id=%s&display=%s&redirect_uri=%s", APP_ID, APP_DISPLAY, APP_REDIRECT)
-	API_URL    = ""
-)
 
 type MyError struct {
 	//Code int `json:"ErrorCode"`
@@ -42,27 +28,18 @@ func generateError(err MyError) []byte {
 	return result
 }
 
-type User struct {
-	Id       int    `json:"user_id,omitempty"`
-	Login    string `json:"login"`
-	Password string `json:"-"`
-	Email    string `json:"email"`
-	Score    int    `json:"score"`
-}
+var dataBase database.DB
 
 func init() {
-	dataBase.generateUsers(20)
+	dataBase = database.CreateDataBase(20)
+	dataBase.GenerateUsers(20)
+	dataBase.SortUsersSlice()
+	dataBase.EndlessSortLeaders()
 }
 
 func main() {
-	//generateUsers(20)
-
-	//fmt.Println("AUTH_URL:",AUTH_URL)
-
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("this is backend server API\n"))
-		//fmt.Fprintf(w,"<a href=%s>click</a>",AUTH_URL)
-		//http.Redirect(w,r,AUTH_URL,http.StatusSeeOther)
 
 	})
 
@@ -93,12 +70,7 @@ func main() {
 			if pageSize <= 0 {
 				pageSize = 5
 			}
-			slice := make([]User, 0, pageSize)
-			begin := (page - 1) * pageSize
-			end := begin + pageSize
-			for _, val := range dataBase.users[begin:end] {
-				slice = append(slice, val)
-			}
+			slice := dataBase.GetLeaders(page,pageSize)
 			resp, _ := json.Marshal(&slice)
 			w.WriteHeader(http.StatusOK)
 			w.Write(resp)
@@ -119,10 +91,10 @@ func main() {
 			err = json.Unmarshal(body, &u)
 			if err != nil {
 				w.WriteHeader(http.StatusBadRequest)
-				w.Write(generateError(MyError{"wrong requst format"}))
+				w.Write(generateError(MyError{"wrong request format"}))
 				return
 			}
-			if _, exist := dataBase.getUserByLogin(u.Login); exist {
+			if _, exist := dataBase.GetUserByLogin(u.Login); exist {
 				w.WriteHeader(http.StatusBadRequest)
 				w.Write(generateError(MyError{"User already exist"}))
 				return
@@ -147,8 +119,8 @@ func main() {
 				w.Write(generateError(MyError{"bad password"}))
 				return
 			}
-			var user User = User{Id: dataBase.lastid, Login: u.Login, Email: u.Email, Password: u.Password, Score: 0}
-			dataBase.saveUser(user)
+			var user models.User = models.User{Id: dataBase.Lastid, Login: u.Login, Email: u.Email, Password: u.Password, Score: 0}
+			dataBase.SaveUser(&user)
 
 			res, err := json.Marshal(&user)
 			if err != nil {
@@ -173,7 +145,7 @@ func main() {
 			err = json.Unmarshal(body, &u)
 			if err != nil {
 				w.WriteHeader(http.StatusBadRequest)
-				w.Write(generateError(MyError{"wrong requst format"}))
+				w.Write(generateError(MyError{"wrong request format"}))
 				return
 			}
 			err = validator.ValidateLogin(u.Login)
@@ -182,12 +154,12 @@ func main() {
 				w.Write(generateError(MyError{"bad login"}))
 				return
 			}
-			user, exist := dataBase.getUserByLogin(u.Login)
+			user, exist := dataBase.GetUserByLogin(u.Login)
 			if !exist {
 				w.Write(generateError(MyError{"User does not exist"}))
 				return
 			}
-			dataBase.deleteUser(user)
+			dataBase.DeleteUser(user)
 			w.WriteHeader(http.StatusOK)
 
 		case http.MethodPut:
@@ -207,15 +179,15 @@ func main() {
 			}
 			var u struct {
 				Login       string `json:"login"`
-				NewPassword string `json:"password,omitempty"`
-				Password    string `json:"old_password"`
+				NewPassword string `json:"new_password,omitempty"`
+				Password    string `json:"password"`
 				Email       string `json:"email,omitempty"`
 				Score       int    `json:"score,omitempty"`
 			}
 			err = json.Unmarshal(body, &u)
 			if err != nil {
 				w.WriteHeader(http.StatusBadRequest)
-				w.Write(generateError(MyError{"wrong requst format"}))
+				w.Write(generateError(MyError{"wrong request format"}))
 				return
 			}
 			err = validator.ValidateLogin(u.Login)
@@ -224,7 +196,7 @@ func main() {
 				w.Write(generateError(MyError{"bad login"}))
 				return
 			}
-			user, exist := dataBase.getUserByLogin(u.Login)
+			user, exist := dataBase.GetUserByLogin(u.Login)
 			if !exist {
 				w.WriteHeader(http.StatusBadRequest)
 				w.Write(generateError(MyError{"User does not exist"}))
@@ -239,7 +211,7 @@ func main() {
 			var newPassword string = user.Password
 			var newEmail string = user.Email
 			var newScore int = user.Score
-			if u.Password != "" {
+			if u.NewPassword != "" {
 				newPassword = u.NewPassword
 			}
 			err = validator.ValidatePassword(newPassword)
@@ -261,9 +233,16 @@ func main() {
 				newScore = u.Score
 			}
 
-			newUser := User{user.Id, u.Login, newPassword, newEmail, newScore}
-			dataBase.updateUser(user.Id, newUser)
+			newUser := models.User{user.Id, u.Login, newPassword, newEmail, newScore}
+			dataBase.UpdateUser(&newUser)
 			w.WriteHeader(http.StatusOK)
+			res, err := json.Marshal(&newUser)
+			if err != nil {
+				log.Println("error while Marshaling in /user")
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			w.Write(res)
 		}
 	})
 
@@ -286,7 +265,10 @@ func main() {
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
-			var u User
+			var u struct {
+				Login    string `json:"login"`
+				Password string `json:"password"`
+			}
 			err = json.Unmarshal(body, &u)
 			if err != nil {
 				w.WriteHeader(http.StatusBadRequest)
@@ -299,7 +281,7 @@ func main() {
 				w.Write(generateError(MyError{"bad login"}))
 				return
 			}
-			dbUser, exist := dataBase.getUserByLogin(u.Login)
+			dbUser, exist := dataBase.GetUserByLogin(u.Login)
 			if !exist {
 				w.WriteHeader(http.StatusBadRequest)
 				w.Write(generateError(MyError{"User does not exist"}))
@@ -343,7 +325,7 @@ func main() {
 			w.Write(generateError(MyError{"Bad URL"}))
 			return
 		}
-		u, exist := dataBase.getUserByID(id)
+		u, exist := dataBase.GetUserByID(id)
 		if !exist {
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write(generateError(MyError{"user does not exist"}))
@@ -358,34 +340,6 @@ func main() {
 		w.Write(user)
 	})
 
-	http.HandleFunc("/vkapi", func(w http.ResponseWriter, r *http.Request) {
-		//http.Redirect(w,r,AUTH_URL,http.StatusSeeOther)
-
-		ctx := r.Context()
-		code := r.FormValue("code")
-		conf := oauth2.Config{
-			ClientID:     APP_ID,
-			ClientSecret: APP_KEY,
-			RedirectURL:  APP_REDIRECT,
-			Endpoint:     vk.Endpoint,
-		}
-
-		token, err := conf.Exchange(ctx, code)
-		if err != nil {
-			log.Println("cannot exchange")
-			log.Println(err)
-			return
-		}
-
-		client := conf.Client(ctx, token)
-		resp, err := client.Get(fmt.Sprintf(API_URL, token.AccessToken))
-		if err != nil {
-			log.Println("cannot request data")
-			log.Println(err)
-			return
-		}
-		defer resp.Body.Close()
-	})
 	fmt.Println("starting server on http://127.0.0.1:8080")
 
 	http.ListenAndServe(":8080", nil)
