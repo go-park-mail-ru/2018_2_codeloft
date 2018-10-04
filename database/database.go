@@ -6,24 +6,53 @@ import (
 	"log"
 	"sort"
 	"strconv"
+	"sync"
 	"time"
 )
 
+//singleton
+var instance *DB
+var once sync.Once
+var mu *sync.Mutex = &sync.Mutex{}
+//singleton
 
 
 type DB struct {
 	Users  map[string]*models.User
 	UsersSlice []*models.User
+	CookiesBase map[string]bool
 	Lastid int
 }
 
+func (db *DB) CheckCookie(val string) bool {
+	mu.Lock()
+	defer mu.Unlock()
+	return db.CookiesBase[val]
+
+}
+
+func (db *DB) AddCookie(value string) {
+	mu.Lock()
+	defer mu.Unlock()
+	db.CookiesBase[value] = true
+}
+
+func (db *DB) DelCookie(value string) {
+	mu.Lock()
+	defer mu.Unlock()
+	delete(db.CookiesBase,value)
+}
+
 func (db * DB) SaveUser(u *models.User){
+	mu.Lock()
 	db.Users[u.Login] = u
 	db.UsersSlice = append(db.UsersSlice, u)
+	mu.Unlock()
 	db.Lastid++
 }
 
 func (db * DB) DeleteUser(u models.User){
+	mu.Lock()
 	user,exist := db.Users[u.Login]
 	if !exist {
 		return
@@ -31,13 +60,18 @@ func (db * DB) DeleteUser(u models.User){
 	user.Login = ""
 	user.Score = -1
 	delete(db.Users, u.Login)
+	mu.Unlock()
 }
 
 func (db *DB) UpdateUser(u *models.User){
+	mu.Lock()
 	*db.Users[u.Login] = *u
+	mu.Unlock()
 }
 
 func (db DB) GetUserByLogin(login string) (models.User,bool){
+	mu.Lock()
+	defer mu.Unlock()
 	if user,exist := db.Users[login]; exist{
 		return *user, true
 	}
@@ -45,6 +79,8 @@ func (db DB) GetUserByLogin(login string) (models.User,bool){
 }
 
 func (db DB) GetUserByEmail(email string) (models.User, bool){
+	mu.Lock()
+	defer mu.Unlock()
 	for _,u := range db.Users {
 		if u.Email == email {
 			return *u, true
@@ -54,6 +90,8 @@ func (db DB) GetUserByEmail(email string) (models.User, bool){
 }
 
 func (db DB) GetUserByID(id int) (models.User, bool){
+	mu.Lock()
+	defer mu.Unlock()
 	for _,u := range db.Users {
 		if u.Id == id {
 			return *u, true
@@ -80,7 +118,9 @@ func (db *DB) SortUsersSlice() {
 	UserGreater := func(i,j int) bool {
 		return db.UsersSlice[i].Score > db.UsersSlice[j].Score
 	}
+	mu.Lock()
 	sort.Slice(db.UsersSlice, UserGreater)
+	mu.Unlock()
 }
 
 func (db *DB) EndlessSortLeaders(){
@@ -104,12 +144,27 @@ func (db DB) GetLeaders (page, pageSize int) []models.User{
 	if end >= usersLength{
 		end = usersLength+1
 	}
+	mu.Lock()
 	for _, val := range db.UsersSlice[begin:end] {
 		slice = append(slice, *val)
 	}
+	mu.Unlock()
 	return slice
 }
 
-func CreateDataBase(size int) DB{
-	return DB{make(map[string]*models.User,size),make([]*models.User,0,size),0}
+func CreateDataBase(size int) *DB{
+	once.Do(func() {
+		instance = &DB{
+			make(map[string]*models.User,size),
+		make([]*models.User,0,size),
+		make(map[string]bool),
+		0,
+		}
+	})
+	return instance
 }
+
+
+
+
+
