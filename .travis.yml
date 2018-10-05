@@ -11,6 +11,7 @@ services:
 
 before_install:
   - docker build .
+  - go get github.com/go-park-mail-ru/2018_2_codeloft/database
 
 script:
   - go test -v
