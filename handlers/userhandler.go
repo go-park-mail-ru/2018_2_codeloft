@@ -27,9 +27,7 @@ func generateError(err MyError) []byte {
 
 var dataBase *database.DB = database.CreateDataBase(0)
 
-
-
-func leaders(w http.ResponseWriter,r * http.Request) {
+func leaders(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -57,9 +55,7 @@ func leaders(w http.ResponseWriter,r * http.Request) {
 	return
 }
 
-
-
-func signUp(w http.ResponseWriter,r * http.Request) {
+func signUp(w http.ResponseWriter, r *http.Request) {
 	body, err := ioutil.ReadAll(r.Body)
 
 	if err != nil {
@@ -112,9 +108,7 @@ func signUp(w http.ResponseWriter,r * http.Request) {
 	w.Write(res)
 }
 
-
-
-func deleteUser(w http.ResponseWriter, r* http.Request){
+func deleteUser(w http.ResponseWriter, r *http.Request) {
 	body, err := ioutil.ReadAll(r.Body)
 
 	if err != nil {
@@ -147,9 +141,7 @@ func deleteUser(w http.ResponseWriter, r* http.Request){
 	w.WriteHeader(http.StatusOK)
 }
 
-
-
-func updateUser(w http.ResponseWriter, r *http.Request){
+func updateUser(w http.ResponseWriter, r *http.Request) {
 	_, err := r.Cookie("session_id")
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
@@ -232,24 +224,26 @@ func updateUser(w http.ResponseWriter, r *http.Request){
 	w.Write(res)
 }
 
+var UserHandler = func(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("content-type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 
-var UserHandler = func(w http.ResponseWriter, r *http.Request){
-		w.Header().Set("content-type", "application/json")
-		switch r.Method {
+	switch r.Method {
 
-		case http.MethodGet:
-			leaders(w, r)
-		case http.MethodPost:
-			signUp(w, r)
-		case http.MethodDelete:
-			deleteUser(w, r)
-		case http.MethodPut:
-			updateUser(w, r)
-		}
+	case http.MethodGet:
+		leaders(w, r)
+	case http.MethodPost:
+		signUp(w, r)
+	case http.MethodDelete:
+		deleteUser(w, r)
+	case http.MethodPut:
+		updateUser(w, r)
+	}
 
 }
 
-var UserById = func(w http.ResponseWriter, r *http.Request){
+var UserById = func(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("content-type", "application/json")
 	url := r.URL.Path
 	url = strings.Trim(url, "/user/")
