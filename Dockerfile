@@ -14,7 +14,7 @@ COPY . /go/src/2018_2_codeloft
 #RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix nocgo -o /app .
 ENV gopath /go
 RUN cd /go/src/2018_2_codeloft && go build -o goapp
-RUN go get ./
+#RUN go get ./
 
 
 FROM alpine
