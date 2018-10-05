@@ -10,10 +10,6 @@ services:
   - docker
 
 before_install:
-  - go get github.com/go-park-mail-ru/2018_2_codeloft/database
-  - go get github.com/go-park-mail-ru/2018_2_codeloft/validator
-  - go get github.com/go-park-mail-ru/2018_2_codeloft/handlers
-  - go get github.com/go-park-mail-ru/2018_2_codeloft/models
   - docker build .
   
 

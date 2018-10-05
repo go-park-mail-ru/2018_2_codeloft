@@ -4,9 +4,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/go-park-mail-ru/2018_2_codeloft/handlers"
-
-	"github.com/go-park-mail-ru/2018_2_codeloft/database"
+	"2018_2_codeloft/database"
+	"2018_2_codeloft/handlers"
 )
 
 var dataBase *database.DB
