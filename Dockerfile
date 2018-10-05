@@ -1,4 +1,4 @@
-FROM golang:1.10.3-alpine3.7
+FROM golang:1.10.3-alpine3.7 as builder
 
 COPY . /go/src/2018_2_codeloft
 #COPY ../github.com /go/src/github
@@ -22,7 +22,7 @@ RUN cd /go/src/2018_2_codeloft && go build -o goapp
 
 FROM alpine
 WORKDIR /app
-COPY /go/src/2018_2_codeloft/goapp /app/
+COPY --from=builder /go/src/2018_2_codeloft/goapp /app/
 EXPOSE 8080
 ENTRYPOINT ./goapp
 
