@@ -1,4 +1,4 @@
-FROM golang:1.10.3-alpine3.7 as builder
+FROM golang:1.10.3-alpine3.7
 
 COPY . /go/src/2018_2_codeloft
 #COPY ../github.com /go/src/github
@@ -14,11 +14,12 @@ COPY . /go/src/2018_2_codeloft
 #RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix nocgo -o /app .
 ENV gopath /go
 RUN cd /go/src/2018_2_codeloft && go build -o goapp
+RUN go get ./
 
 
 FROM alpine
 WORKDIR /app
-COPY --from=builder /go/src/2018_2_codeloft/goapp /app/
+COPY /go/src/2018_2_codeloft/goapp /app/
 EXPOSE 8080
 ENTRYPOINT ./goapp
 
