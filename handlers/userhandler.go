@@ -1,15 +1,16 @@
 package handlers
 
 import (
-	"2018_2_codeloft/database"
-	"2018_2_codeloft/models"
-	"2018_2_codeloft/validator"
 	"encoding/json"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"strconv"
 	"strings"
+
+	"github.com/go-park-mail-ru/2018_2_codeloft/database"
+	"github.com/go-park-mail-ru/2018_2_codeloft/models"
+	"github.com/go-park-mail-ru/2018_2_codeloft/validator"
 )
 
 type MyError struct {

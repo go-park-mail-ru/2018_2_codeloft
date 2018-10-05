@@ -1,10 +1,12 @@
 package main
 
 import (
-	"2018_2_codeloft/database"
-	"2018_2_codeloft/handlers"
 	"fmt"
 	"net/http"
+
+	"github.com/go-park-mail-ru/2018_2_codeloft/handlers"
+
+	"github.com/go-park-mail-ru/2018_2_codeloft/database"
 )
 
 var dataBase *database.DB
@@ -26,4 +28,3 @@ func main() {
 
 	http.ListenAndServe(":8080", nil)
 }
-

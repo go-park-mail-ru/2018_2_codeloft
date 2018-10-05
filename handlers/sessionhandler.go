@@ -1,12 +1,13 @@
 package handlers
 
 import (
-	"2018_2_codeloft/validator"
 	"encoding/json"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"time"
+
+	"github.com/go-park-mail-ru/2018_2_codeloft/validator"
 )
 
 func checkAuth(w http.ResponseWriter, r *http.Request) {
@@ -22,7 +23,6 @@ func checkAuth(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 }
-
 
 func signIn(w http.ResponseWriter, r *http.Request) {
 	body, err := ioutil.ReadAll(r.Body)
@@ -69,7 +69,6 @@ func signIn(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-
 func logout(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie("session_id")
 	if err != nil {
@@ -87,11 +86,11 @@ var SessionHandler = func(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 
 	case http.MethodGet:
-		checkAuth(w,r)
+		checkAuth(w, r)
 	case http.MethodPost:
-		signIn(w,r)
+		signIn(w, r)
 	case http.MethodDelete:
-		logout(w,r)
+		logout(w, r)
 
 	}
 }
