@@ -2,26 +2,27 @@ package database
 
 import (
 	"2018_2_codeloft/models"
-	"github.com/icrowley/fake"
 	"log"
 	"sort"
 	"strconv"
 	"sync"
 	"time"
+
+	"github.com/icrowley/fake"
 )
 
 //singleton
 var instance *DB
 var once sync.Once
 var mu *sync.Mutex = &sync.Mutex{}
+
 //singleton
 
-
 type DB struct {
-	Users  map[string]*models.User
-	UsersSlice []*models.User
+	Users       map[string]*models.User
+	UsersSlice  []*models.User
 	CookiesBase map[string]bool
-	Lastid int
+	Lastid      int
 }
 
 func (db *DB) CheckCookie(val string) bool {
@@ -40,10 +41,10 @@ func (db *DB) AddCookie(value string) {
 func (db *DB) DelCookie(value string) {
 	mu.Lock()
 	defer mu.Unlock()
-	delete(db.CookiesBase,value)
+	delete(db.CookiesBase, value)
 }
 
-func (db * DB) SaveUser(u *models.User){
+func (db *DB) SaveUser(u *models.User) {
 	mu.Lock()
 	db.Users[u.Login] = u
 	db.UsersSlice = append(db.UsersSlice, u)
@@ -51,9 +52,9 @@ func (db * DB) SaveUser(u *models.User){
 	db.Lastid++
 }
 
-func (db * DB) DeleteUser(u models.User){
+func (db *DB) DeleteUser(u models.User) {
 	mu.Lock()
-	user,exist := db.Users[u.Login]
+	user, exist := db.Users[u.Login]
 	if !exist {
 		return
 	}
@@ -63,25 +64,25 @@ func (db * DB) DeleteUser(u models.User){
 	mu.Unlock()
 }
 
-func (db *DB) UpdateUser(u *models.User){
+func (db *DB) UpdateUser(u *models.User) {
 	mu.Lock()
 	*db.Users[u.Login] = *u
 	mu.Unlock()
 }
 
-func (db DB) GetUserByLogin(login string) (models.User,bool){
+func (db DB) GetUserByLogin(login string) (models.User, bool) {
 	mu.Lock()
 	defer mu.Unlock()
-	if user,exist := db.Users[login]; exist{
+	if user, exist := db.Users[login]; exist {
 		return *user, true
 	}
 	return models.User{}, false
 }
 
-func (db DB) GetUserByEmail(email string) (models.User, bool){
+func (db DB) GetUserByEmail(email string) (models.User, bool) {
 	mu.Lock()
 	defer mu.Unlock()
-	for _,u := range db.Users {
+	for _, u := range db.Users {
 		if u.Email == email {
 			return *u, true
 		}
@@ -89,10 +90,10 @@ func (db DB) GetUserByEmail(email string) (models.User, bool){
 	return models.User{}, false
 }
 
-func (db DB) GetUserByID(id int) (models.User, bool){
+func (db DB) GetUserByID(id int) (models.User, bool) {
 	mu.Lock()
 	defer mu.Unlock()
-	for _,u := range db.Users {
+	for _, u := range db.Users {
 		if u.Id == id {
 			return *u, true
 		}
@@ -107,15 +108,16 @@ func (db *DB) GenerateUsers(num int) {
 		u := models.User{db.Lastid, fake.FirstName(), fake.SimplePassword(), fake.EmailAddress(), score}
 		db.SaveUser(&u)
 	}
+	u := models.User{db.Lastid, "kek", "qwerty12345", "kek@mail.ru", 0}
+	db.SaveUser(&u)
 	//for _,v := range(Users) {
 	//	fmt.Println(v)
 	//}
 }
 
-
 func (db *DB) SortUsersSlice() {
 
-	UserGreater := func(i,j int) bool {
+	UserGreater := func(i, j int) bool {
 		return db.UsersSlice[i].Score > db.UsersSlice[j].Score
 	}
 	mu.Lock()
@@ -123,9 +125,9 @@ func (db *DB) SortUsersSlice() {
 	mu.Unlock()
 }
 
-func (db *DB) EndlessSortLeaders(){
+func (db *DB) EndlessSortLeaders() {
 	go func() {
-		c := time.Tick(time.Second*15)
+		c := time.Tick(time.Second * 15)
 		for t := range c {
 			log.Println("Sort LeaderBoard happend:", t)
 			db.SortUsersSlice()
@@ -133,16 +135,16 @@ func (db *DB) EndlessSortLeaders(){
 	}()
 }
 
-func (db DB) GetLeaders (page, pageSize int) []models.User{
+func (db DB) GetLeaders(page, pageSize int) []models.User {
 	slice := make([]models.User, 0, pageSize)
 	usersLength := len(db.Users)
 	begin := (page - 1) * pageSize
 	if begin >= usersLength {
-		begin = usersLength - pageSize;
+		begin = usersLength - pageSize
 	}
 	end := begin + pageSize
-	if end >= usersLength{
-		end = usersLength+1
+	if end >= usersLength {
+		end = usersLength + 1
 	}
 	mu.Lock()
 	for _, val := range db.UsersSlice[begin:end] {
@@ -152,19 +154,14 @@ func (db DB) GetLeaders (page, pageSize int) []models.User{
 	return slice
 }
 
-func CreateDataBase(size int) *DB{
+func CreateDataBase(size int) *DB {
 	once.Do(func() {
 		instance = &DB{
-			make(map[string]*models.User,size),
-		make([]*models.User,0,size),
-		make(map[string]bool),
-		0,
+			make(map[string]*models.User, size),
+			make([]*models.User, 0, size),
+			make(map[string]bool),
+			0,
 		}
 	})
 	return instance
 }
-
-
-
-
-
