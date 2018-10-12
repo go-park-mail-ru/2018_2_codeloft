@@ -2,13 +2,13 @@ package database
 
 import (
 	"2018_2_codeloft/models"
+	"fmt"
+	"github.com/icrowley/fake"
 	"log"
 	"sort"
 	"strconv"
 	"sync"
 	"time"
-
-	"github.com/icrowley/fake"
 )
 
 //singleton
@@ -48,8 +48,9 @@ func (db *DB) SaveUser(u *models.User) {
 	mu.Lock()
 	db.Users[u.Login] = u
 	db.UsersSlice = append(db.UsersSlice, u)
-	mu.Unlock()
 	db.Lastid++
+	mu.Unlock()
+	
 }
 
 func (db *DB) DeleteUser(u models.User) {
@@ -101,18 +102,30 @@ func (db DB) GetUserByID(id int) (models.User, bool) {
 	return models.User{}, false
 }
 
+func (db *DB) ShowUsers(){
+	var i int = 0
+	for _,v := range(db.Users) {
+		fmt.Printf("num : %d,  %v\n",i,v)
+		i++
+	}
+}
+
 func (db *DB) GenerateUsers(num int) {
 	for i := 0; i < num; i++ {
 		score, _ := strconv.Atoi(fake.DigitsN(8))
-
-		u := models.User{db.Lastid, fake.FirstName(), fake.SimplePassword(), fake.EmailAddress(), score}
+		login := fake.FirstName()
+		for {
+			if _, exist := db.Users[login]; !exist {
+				break
+			}
+			login = fake.FirstName()
+		}
+		u := models.User{db.Lastid, login, fake.SimplePassword(), fake.EmailAddress(), score}
 		db.SaveUser(&u)
 	}
 	u := models.User{db.Lastid, "kek", "qwerty12345", "kek@mail.ru", 0}
 	db.SaveUser(&u)
-	//for _,v := range(Users) {
-	//	fmt.Println(v)
-	//}
+	//db.ShowUsers()
 }
 
 func (db *DB) SortUsersSlice() {
@@ -127,7 +140,7 @@ func (db *DB) SortUsersSlice() {
 
 func (db *DB) EndlessSortLeaders() {
 	go func() {
-		c := time.Tick(time.Second * 15)
+		c := time.Tick(time.Hour * 15)
 		for t := range c {
 			log.Println("Sort LeaderBoard happend:", t)
 			db.SortUsersSlice()
@@ -144,8 +157,9 @@ func (db DB) GetLeaders(page, pageSize int) []models.User {
 	}
 	end := begin + pageSize
 	if end >= usersLength {
-		end = usersLength + 1
+		end = usersLength
 	}
+	//fmt.Printf("\tBegin: %v\n\tEnd: %v\n\tLength: %v\n", begin, end,usersLength)
 	mu.Lock()
 	for _, val := range db.UsersSlice[begin:end] {
 		slice = append(slice, *val)
