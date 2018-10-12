@@ -2,13 +2,13 @@ package database
 
 import (
 	"2018_2_codeloft/models"
+	"fmt"
+	"github.com/icrowley/fake"
 	"log"
 	"sort"
 	"strconv"
 	"sync"
 	"time"
-
-	"github.com/icrowley/fake"
 )
 
 //singleton
@@ -110,9 +110,9 @@ func (db *DB) GenerateUsers(num int) {
 	}
 	u := models.User{db.Lastid, "kek", "qwerty12345", "kek@mail.ru", 0}
 	db.SaveUser(&u)
-	//for _,v := range(Users) {
-	//	fmt.Println(v)
-	//}
+	for _,v := range(db.Users) {
+		fmt.Println(v)
+	}
 }
 
 func (db *DB) SortUsersSlice() {
@@ -136,6 +136,21 @@ func (db *DB) EndlessSortLeaders() {
 }
 
 func (db DB) GetLeaders(page, pageSize int) []models.User {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Printf("Recovered :%v, \n\tpage: %v, \n\tpage_size: %v, \n\tuserlength: %v\n", r, page, pageSize, len(db.Users))
+			usersLength := len(db.Users)
+			begin := (page - 1) * pageSize
+			if begin >= usersLength {
+				begin = usersLength - pageSize
+			}
+			end := begin + pageSize
+			if end >= usersLength {
+				end = usersLength
+			}
+			fmt.Printf("\tBegin: %v\n\tEnd: %v\n", begin, end)
+		}
+	}()
 	slice := make([]models.User, 0, pageSize)
 	usersLength := len(db.Users)
 	begin := (page - 1) * pageSize
@@ -144,8 +159,9 @@ func (db DB) GetLeaders(page, pageSize int) []models.User {
 	}
 	end := begin + pageSize
 	if end >= usersLength {
-		end = usersLength + 1
+		end = usersLength
 	}
+	fmt.Printf("\tBegin: %v\n\tEnd: %v\n\t Length: %v\n", begin, end,usersLength)
 	mu.Lock()
 	for _, val := range db.UsersSlice[begin:end] {
 		slice = append(slice, *val)
