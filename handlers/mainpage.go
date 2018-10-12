@@ -2,7 +2,7 @@ package handlers
 
 import "net/http"
 
-var MainPage = func(w http.ResponseWriter, r *http.Request){
+var MainPage = func(w http.ResponseWriter, r *http.Request) {
 	tmpl := `
 <h1>Backend API</h1>
 <h1>Codeloft</h1>

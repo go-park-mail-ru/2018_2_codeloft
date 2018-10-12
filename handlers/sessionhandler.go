@@ -60,7 +60,7 @@ func signIn(w http.ResponseWriter, r *http.Request) {
 	}
 	cookie := http.Cookie{
 		Name:     "session_id",
-		Value:    u.Login + "testCookie" + u.Password,
+		Value:    "testCookie",
 		Expires:  time.Now().Add(30 * 24 * time.Hour),
 		HttpOnly: false,
 	}

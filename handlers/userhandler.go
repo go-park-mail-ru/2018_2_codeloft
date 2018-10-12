@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"2018_2_codeloft/database"
 	"2018_2_codeloft/models"
@@ -106,6 +107,16 @@ func signUp(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	// SET COOKIE
+	cookie := http.Cookie{
+		Name:     "session_id",
+		Value:    "testCookie",
+		Expires:  time.Now().Add(30 * 24 * time.Hour),
+		HttpOnly: false,
+	}
+	dataBase.AddCookie(cookie.Value)
+	http.SetCookie(w, &cookie)
+
 	w.Write(res)
 }
 
