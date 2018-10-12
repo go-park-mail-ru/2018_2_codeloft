@@ -32,6 +32,7 @@ func main() {
 		AllowedOrigins:[]string{"*"},
 		AllowCredentials: true,
 		AllowedMethods:[]string{"GET", "POST", "DELETE", "PUT"},
+		AllowedHeaders:[]string{"Content-Type"},
 	})
 	corsMW := c.Handler(mux)
 	http.ListenAndServe(":8080", corsMW)
