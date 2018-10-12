@@ -48,8 +48,9 @@ func (db *DB) SaveUser(u *models.User) {
 	mu.Lock()
 	db.Users[u.Login] = u
 	db.UsersSlice = append(db.UsersSlice, u)
-	mu.Unlock()
 	db.Lastid++
+	mu.Unlock()
+	
 }
 
 func (db *DB) DeleteUser(u models.User) {
