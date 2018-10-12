@@ -2,12 +2,11 @@
 
 
 [[projects]]
-  branch = "master"
-  digest = "1:cc439e1d9d8cff3d575642f5401033b00f2b8d0cd9f859db45604701c990879a"
+  digest = "1:b06d27db2f87588507f245345f329b4192809e72ab32385a26a6eb25988eb82e"
   name = "github.com/corpix/uarand"
   packages = ["."]
   pruneopts = "UT"
-  revision = "2b8494104d86337cdd41d0a49cbed8e4583c0ab4"
+  revision = "031be390f409fb4bac8fb299e3bcd101479f89f8"
 
 [[projects]]
   branch = "master"
