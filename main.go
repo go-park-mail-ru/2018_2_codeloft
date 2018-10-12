@@ -28,6 +28,12 @@ func main() {
 	mux.HandleFunc("/user/", handlers.UserById)
 
 	fmt.Println("starting server on http://127.0.0.1:8080")
-
-	http.ListenAndServe(":8080", cors.Default().Handler(mux))
+	c := cors.New(cors.Options{
+		AllowedOrigins:[]string{"*"},
+		AllowCredentials: true,
+		AllowedMethods:[]string{"GET", "POST", "DELETE", "PUT"},
+		AllowedHeaders:[]string{"Content-Type"},
+	})
+	corsMW := c.Handler(mux)
+	http.ListenAndServe(":8080", corsMW)
 }
