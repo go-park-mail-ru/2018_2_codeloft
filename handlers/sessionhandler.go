@@ -62,7 +62,9 @@ func signIn(w http.ResponseWriter, r *http.Request) {
 		Name:     "session_id",
 		Value:    "testCookie",
 		Expires:  time.Now().Add(30 * 24 * time.Hour),
-		HttpOnly: false,
+		HttpOnly: true,
+		Secure: true,
+
 	}
 	dataBase.AddCookie(cookie.Value)
 	http.SetCookie(w, &cookie)

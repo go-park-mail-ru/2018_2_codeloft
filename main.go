@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/rs/cors"
 )
@@ -33,6 +34,14 @@ func panicMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+func logMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		//fmt.Println("panicMiddleware", r.URL.Path)
+		fmt.Printf("URL: %v; Method: %v; Origin: %v\n", r.URL.Path, r.Method, r.Header.Get("Origin"))
+		next.ServeHTTP(w, r)
+	})
+}
+
 func main() {
 	mux := http.NewServeMux()
 
@@ -40,15 +49,22 @@ func main() {
 	mux.HandleFunc("/user", handlers.UserHandler)
 	mux.HandleFunc("/session", handlers.SessionHandler)
 	mux.HandleFunc("/user/", handlers.UserById)
-	panicMW := panicMiddleware(mux)
 
 	fmt.Println("starting server on http://127.0.0.1:8080")
 	c := cors.New(cors.Options{
-		AllowedOrigins:   []string{"*"},
+		AllowOriginFunc: func(origin string) bool {
+			return strings.Contains(origin, "codeloft") ||
+				strings.Contains(origin, "localhost") ||
+				strings.Contains(origin, "127.0.0.1")
+		},
+		//AllowedOrigins:   []string{"http://localhost:3000"},
 		AllowCredentials: true,
 		AllowedMethods:   []string{"GET", "POST", "DELETE", "PUT"},
 		AllowedHeaders:   []string{"Content-Type"},
+		//Debug:            true,
 	})
-	corsMW := c.Handler(panicMW)
-	http.ListenAndServe(":8080", corsMW)
+	logHandler := logMiddleware(mux)
+	corsMW := c.Handler(logHandler)
+	panicMW := panicMiddleware(corsMW)
+	http.ListenAndServe(":8080", panicMW)
 }
