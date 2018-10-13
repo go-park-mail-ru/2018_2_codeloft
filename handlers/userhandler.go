@@ -115,7 +115,7 @@ func signUp(w http.ResponseWriter, r *http.Request) {
 		HttpOnly: true,
 		Secure: true,
 	}
-	dataBase.AddCookie(cookie.Value)
+	dataBase.AddCookie(cookie.Value, &user)
 	http.SetCookie(w, &cookie)
 
 	w.Write(res)

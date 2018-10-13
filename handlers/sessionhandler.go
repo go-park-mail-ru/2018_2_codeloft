@@ -20,8 +20,16 @@ func checkAuth(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
+	user := dataBase.CookiesBase[cookie.Value]
+	res, err := json.Marshal(&user)
+	if err != nil {
+		log.Println("error while Marshaling in /user")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 
 	w.WriteHeader(http.StatusOK)
+	w.Write(res)
 }
 
 func signIn(w http.ResponseWriter, r *http.Request) {
@@ -66,7 +74,7 @@ func signIn(w http.ResponseWriter, r *http.Request) {
 		Secure: true,
 
 	}
-	dataBase.AddCookie(cookie.Value)
+	dataBase.AddCookie(cookie.Value, &dbUser)
 	http.SetCookie(w, &cookie)
 	w.WriteHeader(http.StatusOK)
 }

@@ -21,21 +21,22 @@ var mu *sync.Mutex = &sync.Mutex{}
 type DB struct {
 	Users       map[string]*models.User
 	UsersSlice  []*models.User
-	CookiesBase map[string]bool
+	CookiesBase map[string]*models.User
 	Lastid      int
 }
 
 func (db *DB) CheckCookie(val string) bool {
 	mu.Lock()
 	defer mu.Unlock()
-	return db.CookiesBase[val]
+	_, exist := db.CookiesBase[val]
+	return exist
 
 }
 
-func (db *DB) AddCookie(value string) {
+func (db *DB) AddCookie(value string, user *models.User) {
 	mu.Lock()
 	defer mu.Unlock()
-	db.CookiesBase[value] = true
+	db.CookiesBase[value] = user
 }
 
 func (db *DB) DelCookie(value string) {
@@ -173,7 +174,7 @@ func CreateDataBase(size int) *DB {
 		instance = &DB{
 			make(map[string]*models.User, size),
 			make([]*models.User, 0, size),
-			make(map[string]bool),
+			make(map[string]*models.User),
 			0,
 		}
 	})
