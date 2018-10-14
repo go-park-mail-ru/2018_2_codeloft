@@ -1,6 +1,9 @@
 #folders
 .idea/
 
+#configs
+.env
+
 # Prerequisites
 *.d
 
