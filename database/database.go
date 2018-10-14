@@ -1,7 +1,7 @@
 package database
 
 import (
-	"2018_2_codeloft/models"
+	"github.com/go-park-mail-ru/2018_2_codeloft/models"
 	"fmt"
 	"github.com/icrowley/fake"
 	"log"

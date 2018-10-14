@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"time"
 
-	"2018_2_codeloft/validator"
+	"github.com/go-park-mail-ru/2018_2_codeloft/validator"
 )
 
 func checkAuth(w http.ResponseWriter, r *http.Request) {

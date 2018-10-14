@@ -1,9 +1,9 @@
 package main
 
 import (
-	"2018_2_codeloft/database"
-	"2018_2_codeloft/handlers"
-	"2018_2_codeloft/models"
+	"github.com/go-park-mail-ru/2018_2_codeloft/database"
+	"github.com/go-park-mail-ru/2018_2_codeloft/handlers"
+	"github.com/go-park-mail-ru/2018_2_codeloft/models"
 	"database/sql"
 	"fmt"
 	"log"
