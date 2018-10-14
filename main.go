@@ -47,8 +47,16 @@ func logMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-
-
+//func CreateTable(db *sql.DB){
+//	db.Exec("create table if not exists users (" +
+//	"id bigserial not null primary key,"+
+//		"login varchar(30) unique,"+
+//		"password varchar(30),"+
+//		"email varchar(30),"+
+//		"score int"+
+//	");" )
+//}
+//
 //func GenerateUsers(num int,db *sql.DB) {
 //	for i := 0; i < num; i++ {
 //		score, _ := strconv.Atoi(fake.DigitsN(8))
@@ -73,11 +81,10 @@ func main() {
 	username := os.Getenv("USERNAME")
 	password := os.Getenv("PASSWORD")
 	DB_NAME := "codeloft"
-	dbInfo := os.Getenv("DATABASE_URL2")
+	dbInfo := os.Getenv("DATABASE_URL")
 	if dbInfo == "" {
 		dbInfo = fmt.Sprintf("user=%s password=%s dbname=%s host=127.0.0.1 port=5432 sslmode=disable", username, password, DB_NAME)
 	}
-	fmt.Println(dbInfo)
 	db, err := sql.Open("postgres", dbInfo)
 	defer db.Close()
 	if err != nil {
@@ -89,19 +96,18 @@ func main() {
 	}
 	//GenerateUsers(20,db)
 	rows, _ := db.Query("select * from users")
-	fmt.Println(rows)
-	if rows == nil {
-		return
-	}
-	for rows.Next() {
-		var id int
-		var login string
-		var password string
-		var email string
-		var score int
-		rows.Scan(&id,&login,&password,&email,&score)
-		user := models.User{id,login,password,email,score}
-		fmt.Println(user)
+	//fmt.Println(rows)
+	if rows != nil {
+		for rows.Next() {
+			var id int
+			var login string
+			var password string
+			var email string
+			var score int
+			rows.Scan(&id, &login, &password, &email, &score)
+			user := models.User{id, login, password, email, score}
+			fmt.Println(user)
+		}
 	}
 	mux := http.NewServeMux()
 
