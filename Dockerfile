@@ -1,8 +1,8 @@
 FROM golang:1.10.3-alpine3.7 as builder
 
-COPY . /go/src/2018_2_codeloft
+COPY . /go/src/github.com/go-park-mail-ru/2018_2_codeloft
 ENV gopath /go
-RUN cd /go/src/2018_2_codeloft && go build -o goapp
+RUN cd /go/src/github.com/go-park-mail-ru/2018_2_codeloft && go build -o goapp
 
 
 FROM ubuntu:18.04
@@ -47,7 +47,7 @@ EXPOSE 5432
 
 #FROM alpine
 WORKDIR /app
-COPY --from=builder /go/src/2018_2_codeloft/goapp /app/
+COPY --from=builder /go/src/github.com/go-park-mail-ru/2018_2_codeloft/goapp /app/
 #COPY .env .
 #RUN source ./.env
 EXPOSE 8080
