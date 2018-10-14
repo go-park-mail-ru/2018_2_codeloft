@@ -36,3 +36,8 @@
 [prune]
   go-tests = true
   unused-packages = true
+
+[metadata.heroku]
+  root-package = "github.com/go-park-mail-ru/2018_2_codeloft"
+  go-version = "1.10.3"
+  install = [ "./..." ]
