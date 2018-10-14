@@ -1,9 +1,9 @@
-FROM golang:1.10.3-alpine3.7 as builder
-
-COPY . /go/src/github.com/go-park-mail-ru/2018_2_codeloft
-ENV gopath /go
-RUN cd /go/src/github.com/go-park-mail-ru/2018_2_codeloft && go build -o goapp
-
+#FROM golang:1.10.3-alpine3.7 as builder
+#
+#COPY . /go/src/github.com/go-park-mail-ru/2018_2_codeloft
+#ENV gopath /go
+#RUN cd /go/src/github.com/go-park-mail-ru/2018_2_codeloft && go build -o goapp
+#
 
 FROM ubuntu:18.04
 
@@ -16,6 +16,7 @@ ARG PASSWORD
 RUN apt-get -y update
 ENV USERNAME $USERNAME
 ENV PASSWORD $PASSWORD
+
 #
 # Установка postgresql
 #
@@ -41,17 +42,37 @@ RUN echo "listen_addresses='*'" >> /etc/postgresql/$PGVER/main/postgresql.conf
 
 # Expose the PostgreSQL port
 EXPOSE 5432
-
+USER root
 # Add VOLUMEs to allow backup of config, logs and databases
 #VOLUME ["/etc/postgresql", "/var/log/postgresql", "/var/lib/postgresql"]
 
-#FROM alpine
-WORKDIR /app
-COPY --from=builder /go/src/github.com/go-park-mail-ru/2018_2_codeloft/goapp /app/
-#COPY .env .
-#RUN source ./.env
+##FROM alpine
+#WORKDIR /app
+#COPY --from=builder /go/src/github.com/go-park-mail-ru/2018_2_codeloft/goapp /app/
+##COPY .env .
+##RUN source ./.env
+#EXPOSE 80
+#CMD service postgresql start && ./goapp
+
+# Установка golang
+ENV GOVER 1.10
+RUN apt-get install -y golang-$GOVER
+RUN apt-get install -y git
+
+# Выставляем переменную окружения для сборки проекта
+ENV GOROOT /usr/lib/go-$GOVER
+ENV GOPATH /opt/go
+ENV PATH $GOROOT/bin:$GOPATH/bin:/usr/local/go/bin:$PATH
+
+# Копируем исходный код в Docker-контейнер
+WORKDIR $GOPATH/src/github.com/go-park-mail-ru/2018_2_codeloft
+COPY . $GOPATH/src/github.com/go-park-mail-ru/2018_2_codeloft
+
+RUN go install .
 EXPOSE 8080
-CMD service postgresql start && ./goapp
+CMD service postgresql start && 2018_2_codeloft
+# sudo docker run -it -p 8000:8080 <IMAGEID> прокидываем на 8080, ибо сервер случает его
+
 
 #CMD ["2018_2_codeloft"]
 

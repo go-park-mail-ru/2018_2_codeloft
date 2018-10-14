@@ -132,7 +132,7 @@ func main() {
 	logHandler := logMiddleware(mux)
 	corsMW := c.Handler(logHandler)
 	panicMW := panicMiddleware(corsMW)
-	port := os.Getenv("PORT")
+	port := os.Getenv("PORT") // for heroku
 	if port != "" {
 		log.Println("get port from env: ", port)
 	} else {
