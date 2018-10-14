@@ -76,7 +76,16 @@ func signIn(w http.ResponseWriter, r *http.Request) {
 	}
 	dataBase.AddCookie(cookie.Value, &dbUser)
 	http.SetCookie(w, &cookie)
+	user := dataBase.CookiesBase[cookie.Value]
+	res, err := json.Marshal(user)
+	if err != nil {
+		log.Println("error while Marshaling in /session POST")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
 	w.WriteHeader(http.StatusOK)
+	w.Write(res)
 }
 
 func logout(w http.ResponseWriter, r *http.Request) {

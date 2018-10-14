@@ -51,7 +51,7 @@ COPY --from=builder /go/src/github.com/go-park-mail-ru/2018_2_codeloft/goapp /ap
 #COPY .env .
 #RUN source ./.env
 EXPOSE 8080
-CMD service postgresql start && ./goapp $USERNAME $PASSWORD
+CMD service postgresql start && ./goapp
 
 #CMD ["2018_2_codeloft"]
 
