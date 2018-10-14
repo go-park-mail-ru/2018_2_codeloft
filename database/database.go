@@ -123,6 +123,7 @@ func (db *DB) GenerateUsers(num int) {
 		}
 		u := models.User{db.Lastid, login, fake.SimplePassword(), fake.EmailAddress(), score}
 		db.SaveUser(&u)
+
 	}
 	u := models.User{db.Lastid, "kek", "qwerty12345", "kek@mail.ru", 0}
 	db.SaveUser(&u)

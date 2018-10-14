@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/go-park-mail-ru/2018_2_codeloft/database"
 	"github.com/go-park-mail-ru/2018_2_codeloft/handlers"
+	"github.com/go-park-mail-ru/2018_2_codeloft/models"
 	"log"
 	"net/http"
 	"os"
@@ -46,24 +47,37 @@ func logMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-const DB_NAME = "codeloft"
+
+
+//func GenerateUsers(num int,db *sql.DB) {
+//	for i := 0; i < num; i++ {
+//		score, _ := strconv.Atoi(fake.DigitsN(8))
+//		login := fake.FirstName()
+//		for {
+//			if _, exist := db.Users[login]; !exist {
+//				break
+//			}
+//			login = fake.FirstName()
+//		}
+//		u := models.User{0, login, fake.SimplePassword(), fake.EmailAddress(), score}
+//		db.Exec("INSERT INTO users()")
+//
+//	}
+//	u := models.User{db.Lastid, "kek", "qwerty12345", "kek@mail.ru", 0}
+//	db.SaveUser(&u)
+//	//db.ShowUsers()
+//}
+
 
 func main() {
 	username := os.Getenv("USERNAME")
 	password := os.Getenv("PASSWORD")
-	log.Printf("username: %v %v;\n", username,password)
-	//if len(os.Args) < 2 {
-	//	log.Println("usage ./goapp <username> <password>")
-	//
-	//}
-	//args := os.Args[1:]
-	//username := args[0]
-	//password := args[1]
+	DB_NAME := "codeloft"
 	dbInfo := os.Getenv("DATABASE_URL")
 	if dbInfo == "" {
 		dbInfo = fmt.Sprintf("user=%s password=%s dbname=%s host=127.0.0.1 port=5432 sslmode=disable", username, password, DB_NAME)
 	}
-
+	fmt.Println(dbInfo)
 	db, err := sql.Open("postgres", dbInfo)
 	defer db.Close()
 	if err != nil {
@@ -73,17 +87,19 @@ func main() {
 	if err != nil {
 		log.Println("error in ping", err)
 	}
-	//rows, _ := db.Query("select * from users")
-	//for rows.Next() {
-	//	var id int
-	//	var login string
-	//	var password string
-	//	var email string
-	//	var score int
-	//	rows.Scan(&id,&login,&password,&email,&score)
-	//	user := models.User{id,login,password,email,score}
-	//	fmt.Println(user)
-	//}
+	//GenerateUsers(20,db)
+	rows, _ := db.Query("select * from users")
+	fmt.Println(rows)
+	for rows.Next() {
+		var id int
+		var login string
+		var password string
+		var email string
+		var score int
+		rows.Scan(&id,&login,&password,&email,&score)
+		user := models.User{id,login,password,email,score}
+		fmt.Println(user)
+	}
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/", handlers.MainPage)
