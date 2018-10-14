@@ -49,12 +49,17 @@ func logMiddleware(next http.Handler) http.Handler {
 const DB_NAME = "codeloft"
 
 func main() {
-	if len(os.Args) < 2 {
-		log.Println("usage ./goapp <username> <password>")
-
-	}
-	args := os.Args[1:]
-	dbinfo := fmt.Sprintf("user=%s password=%s dbname=%s host=127.0.0.1 port=5432 sslmode=disable", args[0], args[1], DB_NAME)
+	username := os.Getenv("USERNAME")
+	password := os.Getenv("PASSWORD")
+	log.Printf("username: %v;\n", username)
+	//if len(os.Args) < 2 {
+	//	log.Println("usage ./goapp <username> <password>")
+	//
+	//}
+	//args := os.Args[1:]
+	//username := args[0]
+	//password := args[1]
+	dbinfo := fmt.Sprintf("user=%s password=%s dbname=%s host=127.0.0.1 port=5432 sslmode=disable", username, password, DB_NAME)
 	db, err := sql.Open("postgres", dbinfo)
 	defer db.Close()
 	if err != nil {
