@@ -51,7 +51,7 @@ const DB_NAME = "codeloft"
 func main() {
 	username := os.Getenv("USERNAME")
 	password := os.Getenv("PASSWORD")
-	log.Printf("username: %v;\n", username)
+	log.Printf("username: %v %v;\n", username,password)
 	//if len(os.Args) < 2 {
 	//	log.Println("usage ./goapp <username> <password>")
 	//
@@ -67,7 +67,7 @@ func main() {
 	}
 	err = db.Ping()
 	if err != nil {
-		log.Println("error in ping")
+		log.Println("error in ping", err)
 	}
 	//rows, _ := db.Query("select * from users")
 	//for rows.Next() {
@@ -103,5 +103,12 @@ func main() {
 	logHandler := logMiddleware(mux)
 	corsMW := c.Handler(logHandler)
 	panicMW := panicMiddleware(corsMW)
-	http.ListenAndServe(":8080", panicMW)
+	port := os.Getenv("PORT")
+	if port != "" {
+		log.Println("get port from env: ", port)
+	} else {
+		port = "8080"
+	}
+	addr := fmt.Sprintf(":%s", port)
+	http.ListenAndServe(addr, panicMW)
 }
