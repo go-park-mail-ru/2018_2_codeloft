@@ -1,11 +1,10 @@
 package main
 
 import (
-	"github.com/go-park-mail-ru/2018_2_codeloft/database"
-	"github.com/go-park-mail-ru/2018_2_codeloft/handlers"
-	"github.com/go-park-mail-ru/2018_2_codeloft/models"
 	"database/sql"
 	"fmt"
+	"github.com/go-park-mail-ru/2018_2_codeloft/database"
+	"github.com/go-park-mail-ru/2018_2_codeloft/handlers"
 	"log"
 	"net/http"
 	"os"
@@ -50,6 +49,10 @@ func logMiddleware(next http.Handler) http.Handler {
 const DB_NAME = "codeloft"
 
 func main() {
+	if len(os.Args) < 2 {
+		log.Println("usage ./goapp <username> <password>")
+
+	}
 	args := os.Args[1:]
 	dbinfo := fmt.Sprintf("user=%s password=%s dbname=%s host=127.0.0.1 port=5432 sslmode=disable", args[0], args[1], DB_NAME)
 	db, err := sql.Open("postgres", dbinfo)
@@ -57,17 +60,21 @@ func main() {
 	if err != nil {
 		fmt.Println("Can't connect to database")
 	}
-	rows, _ := db.Query("select * from users")
-	for rows.Next() {
-		var id int
-		var login string
-		var password string
-		var email string
-		var score int
-		rows.Scan(&id,&login,&password,&email,&score)
-		user := models.User{id,login,password,email,score}
-		fmt.Println(user)
+	err = db.Ping()
+	if err != nil {
+		log.Println("error in ping")
 	}
+	//rows, _ := db.Query("select * from users")
+	//for rows.Next() {
+	//	var id int
+	//	var login string
+	//	var password string
+	//	var email string
+	//	var score int
+	//	rows.Scan(&id,&login,&password,&email,&score)
+	//	user := models.User{id,login,password,email,score}
+	//	fmt.Println(user)
+	//}
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/", handlers.MainPage)
