@@ -59,8 +59,12 @@ func main() {
 	//args := os.Args[1:]
 	//username := args[0]
 	//password := args[1]
-	dbinfo := fmt.Sprintf("user=%s password=%s dbname=%s host=127.0.0.1 port=5432 sslmode=disable", username, password, DB_NAME)
-	db, err := sql.Open("postgres", dbinfo)
+	dbInfo := os.Getenv("DATABASE_URL")
+	if dbInfo == "" {
+		dbInfo = fmt.Sprintf("user=%s password=%s dbname=%s host=127.0.0.1 port=5432 sslmode=disable", username, password, DB_NAME)
+	}
+
+	db, err := sql.Open("postgres", dbInfo)
 	defer db.Close()
 	if err != nil {
 		fmt.Println("Can't connect to database")
