@@ -7,10 +7,10 @@ go:
 
 go_import_path: github.com/go-park-mail-ru/2018_2_codeloft
 
-#branches:
-#  only:
-#    - testing
-#    - CODELOFT-db
+branches:
+  only:
+    - testing
+    - CODELOFT-db
 
 services:
   - docker
