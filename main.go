@@ -73,7 +73,7 @@ func main() {
 	username := os.Getenv("USERNAME")
 	password := os.Getenv("PASSWORD")
 	DB_NAME := "codeloft"
-	dbInfo := os.Getenv("DATABASE_URL")
+	dbInfo := os.Getenv("DATABASE_URL2")
 	if dbInfo == "" {
 		dbInfo = fmt.Sprintf("user=%s password=%s dbname=%s host=127.0.0.1 port=5432 sslmode=disable", username, password, DB_NAME)
 	}
@@ -90,6 +90,9 @@ func main() {
 	//GenerateUsers(20,db)
 	rows, _ := db.Query("select * from users")
 	fmt.Println(rows)
+	if rows == nil {
+		return
+	}
 	for rows.Next() {
 		var id int
 		var login string
