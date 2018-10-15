@@ -321,6 +321,7 @@ func (h *UserById) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	url = strings.Trim(url, "/user/")
 	id, err := strconv.ParseInt(url,10,64)
 	if err != nil {
+		log.Printf("At URL %s. Error:", r.URL.Path)
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write(generateError(models.MyError{r.URL.Path,"Bad URL",err}))
 		return
