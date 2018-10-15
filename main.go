@@ -89,13 +89,15 @@ func main() {
 	db.DB_URL = os.Getenv("DATABASE_URL")
 	db.ConnectDataBase()
 	defer db.DataBase.Close()
-	gopath := os.Getenv("GOPATH")
-	var filepath string
-	if _, err := os.Stat(gopath + "/src/github.com/go-park-mail-ru/2018_2_codeloft/resources/initdb.sql"); err != nil {
-		filepath = gopath + "/src/github.com/go-park-mail-ru/2018_2_codeloft/resources2/initdb.sql"
-	} else {
-		filepath = "../src/github.com/go-park-mail-ru/2018_2_codeloft/resources/initdb.sql"
-	}
+	//gopath := os.Getenv("GOPATH")
+	var filepath string = "resources/initdb.sql"
+
+	//if _, err := os.Stat(gopath + "/src/github.com/go-park-mail-ru/2018_2_codeloft/resources/initdb.sql"); err != nil {
+	//	filepath = gopath + "/src/github.com/go-park-mail-ru/2018_2_codeloft/resources/initdb.sql"
+	//} else {
+	//	filepath = "../src/github.com/go-park-mail-ru/2018_2_codeloft/resources/initdb.sql"
+	//	filepath = "resources/initdb.sql"
+	//}
 	if _,err := os.Stat(filepath); err == nil {
 		db.Init(filepath)
 	} else {
