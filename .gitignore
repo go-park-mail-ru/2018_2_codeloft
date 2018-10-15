@@ -1,6 +1,6 @@
 #folders
 .idea/
-worktests.go
+./worktests.go
 
 #configs
 .env
