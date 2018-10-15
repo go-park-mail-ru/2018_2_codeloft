@@ -1,11 +1,9 @@
 package main
 
 import (
-	"database/sql"
 	"fmt"
 	"github.com/go-park-mail-ru/2018_2_codeloft/database"
 	"github.com/go-park-mail-ru/2018_2_codeloft/handlers"
-	"github.com/go-park-mail-ru/2018_2_codeloft/models"
 	"log"
 	"net/http"
 	"os"
@@ -16,14 +14,6 @@ import (
 	_ "github.com/lib/pq"
 )
 
-var dataBase *database.DB
-
-func init() {
-	dataBase = database.CreateDataBase(20)
-	dataBase.GenerateUsers(20)
-	dataBase.SortUsersSlice()
-	dataBase.EndlessSortLeaders()
-}
 
 func panicMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -76,45 +66,57 @@ func logMiddleware(next http.Handler) http.Handler {
 //	//db.ShowUsers()
 //}
 
-
 func main() {
-	username := os.Getenv("USERNAME")
-	password := os.Getenv("PASSWORD")
-	DB_NAME := "codeloft"
-	dbInfo := os.Getenv("DATABASE_URL")
-	if dbInfo == "" {
-		dbInfo = fmt.Sprintf("user=%s password=%s dbname=%s host=127.0.0.1 port=5432 sslmode=disable", username, password, DB_NAME)
-	}
-	db, err := sql.Open("postgres", dbInfo)
-	defer db.Close()
-	if err != nil {
-		fmt.Println("Can't connect to database")
-	}
-	err = db.Ping()
-	if err != nil {
-		log.Println("error in ping", err)
-	}
-	//GenerateUsers(20,db)
-	rows, _ := db.Query("select * from users")
-	//fmt.Println(rows)
-	if rows != nil {
-		for rows.Next() {
-			var id int
-			var login string
-			var password string
-			var email string
-			var score int
-			rows.Scan(&id, &login, &password, &email, &score)
-			user := models.User{id, login, password, email, score}
-			fmt.Println(user)
+	db := &database.DB{}
+	if (len(os.Args) < 3){
+		fmt.Println("Usage ./2018_2_codeloft <username> <password>")
+		fmt.Println("Getting USERNAME and PASSWORD from env")
+		var exist bool
+		db.DB_USERNAME, exist = os.LookupEnv("USERNAME")
+		if !exist {
+			log.Println("USERNAME don't set")
 		}
+		db.DB_PASSWORD, exist = os.LookupEnv("PASSWORD")
+		if !exist {
+			log.Println("PASSWORD don't set")
+		}
+	} else
+	{
+		db.DB_USERNAME = os.Args[1]
+		db.DB_PASSWORD = os.Args[2]
 	}
+	db.DB_NAME = "codeloft"
+	db.DB_URL = os.Getenv("DATABASE_URL")
+	db.ConnectDataBase()
+	defer db.DataBase.Close()
+	gopath := os.Getenv("GOPATH")
+	filepath := gopath + "/src/github.com/go-park-mail-ru/2018_2_codeloft/resources/initdb.sql"
+	if _,err := os.Stat(filepath); err == nil {
+		db.Init(filepath)
+	} else {
+		log.Printf("file %s does not exist\n", filepath)
+	}
+
+	//rows, _ := db.DataBase.Query("select * from users")
+	//fmt.Println(rows)
+	//if rows != nil {
+	//	for rows.Next() {
+	//		var id int
+	//		var login string
+	//		var password string
+	//		var email string
+	//		var score int
+	//		rows.Scan(&id, &login, &password, &email, &score)
+	//		user := models.User{id, login, password, email}
+	//		fmt.Println(user)
+	//	}
+	//}
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/", handlers.MainPage)
-	mux.HandleFunc("/user", handlers.UserHandler)
-	mux.HandleFunc("/session", handlers.SessionHandler)
-	mux.HandleFunc("/user/", handlers.UserById)
+	mux.Handle("/user", &handlers.UserHandler{db.DataBase})
+	mux.Handle("/session", &handlers.SessionHandler{db.DataBase})
+	mux.Handle("/user/", &handlers.UserById{db.DataBase})
 
 	fmt.Println("starting server on http://127.0.0.1:8080")
 	c := cors.New(cors.Options{

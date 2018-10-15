@@ -30,12 +30,13 @@ USER postgres
 # then create a database `docker` owned by the ``docker`` role.
 RUN /etc/init.d/postgresql start &&\
     psql --command "CREATE USER $USERNAME WITH SUPERUSER PASSWORD '$PASSWORD';" &&\
-    createdb -O codeloft codeloft &&\
+    createdb -O $USERNAME codeloft &&\
     /etc/init.d/postgresql stop
 
 # Adjust PostgreSQL configuration so that remote connections to the
 # database are possible.
 RUN echo "host all  all    0.0.0.0/0  md5" >> /etc/postgresql/$PGVER/main/pg_hba.conf
+
 
 # And add ``listen_addresses`` to ``/etc/postgresql/$PGVER/main/postgresql.conf``
 RUN echo "listen_addresses='*'" >> /etc/postgresql/$PGVER/main/postgresql.conf
@@ -70,7 +71,10 @@ COPY . $GOPATH/src/github.com/go-park-mail-ru/2018_2_codeloft
 
 RUN go install .
 EXPOSE 8080
-CMD service postgresql start && 2018_2_codeloft
+#RUN /etc/init.d/postgresql start &&\
+#    psql -U $USERNAME -d codeloft -a -f resources/initdb.sql &&\
+#    /etc/init.d/postgresql stop
+CMD start service postgres && 2018_2_codeloft $USERNAME $PASSWORD
 # sudo docker run -it -p 8000:8080 <IMAGEID> прокидываем на 8080, ибо сервер случает его
 
 
