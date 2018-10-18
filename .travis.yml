@@ -3,15 +3,28 @@ sudo: required
 language: go
 
 go: 
-  - "1.10.x"
-  - "1.11"
+  - "1.10.3"
+
+go_import_path: github.com/go-park-mail-ru/2018_2_codeloft
+
+branches:
+  only:
+    - testing
+    - CODELOFT-db
 
 services:
   - docker
 
 before_install:
-  - docker build .
-  
+  - docker build --build-arg USERNAME=$USERNAME --build-arg PASSWORD=$PASSWORD .
+
 
 script:
   - go test -v
+
+deploy:
+  provider: heroku
+  api_key: $heroku_api
+  app: codeloft
+  on:
+    all_branches: true

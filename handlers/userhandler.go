@@ -1,25 +1,22 @@
 package handlers
 
 import (
+	"database/sql"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"time"
 
-	"2018_2_codeloft/database"
-	"2018_2_codeloft/models"
-	"2018_2_codeloft/validator"
+	"github.com/go-park-mail-ru/2018_2_codeloft/models"
+	"github.com/go-park-mail-ru/2018_2_codeloft/validator"
 )
 
-type MyError struct {
-	//Code int `json:"ErrorCode"`
-	What string `json:"What"`
-}
-
-func generateError(err MyError) []byte {
+func generateError(err models.MyError) []byte {
 	result, e := json.Marshal(&err)
 	if e != nil {
 		log.Fatal("Error while MarshalJson while generating Error")
@@ -27,13 +24,11 @@ func generateError(err MyError) []byte {
 	return result
 }
 
-var dataBase *database.DB = database.CreateDataBase(0)
-
-func leaders(w http.ResponseWriter, r *http.Request) {
+func leaders(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	err := r.ParseForm()
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write(generateError(MyError{"error while parsing form"}))
+		w.Write(generateError(models.MyError{r.URL.Path,"error while parsing form",err}))
 		return
 	}
 	page, err := strconv.Atoi(r.FormValue("page"))
@@ -50,14 +45,14 @@ func leaders(w http.ResponseWriter, r *http.Request) {
 	if pageSize <= 0 {
 		pageSize = 5
 	}
-	slice := dataBase.GetLeaders(page, pageSize)
+	slice := models.GetLeaders(db,page,pageSize)
 	resp, _ := json.Marshal(&slice)
 	w.WriteHeader(http.StatusOK)
 	w.Write(resp)
 	return
 }
 
-func signUp(w http.ResponseWriter, r *http.Request) {
+func signUp(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	body, err := ioutil.ReadAll(r.Body)
 
 	if err != nil {
@@ -73,34 +68,35 @@ func signUp(w http.ResponseWriter, r *http.Request) {
 	err = json.Unmarshal(body, &u)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write(generateError(MyError{"wrong request format"}))
+		w.Write(generateError(models.MyError{r.URL.Path,"wrong request format",err}))
 		return
 	}
-	if _, exist := dataBase.GetUserByLogin(u.Login); exist {
+	var user models.User
+	if exist := user.GetUserByLogin(db, u.Login); exist {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write(generateError(MyError{"User already exist"}))
+		w.Write(generateError(models.MyError{r.URL.Path,"User already exist",fmt.Errorf("")}))
 		return
 	}
 	err = validator.ValidateEmail(u.Email)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write(generateError(MyError{"bad email"}))
+		w.Write(generateError(models.MyError{r.URL.Path,"bad email",err}))
 		return
 	}
 	err = validator.ValidateLogin(u.Login)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write(generateError(MyError{"bad login"}))
+		w.Write(generateError(models.MyError{r.URL.Path,"bad login",err}))
 		return
 	}
 	err = validator.ValidatePassword(u.Password)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write(generateError(MyError{"bad password"}))
+		w.Write(generateError(models.MyError{r.URL.Path,"bad password",err}))
 		return
 	}
-	var user models.User = models.User{Id: dataBase.Lastid, Login: u.Login, Email: u.Email, Password: u.Password, Score: 0}
-	dataBase.SaveUser(&user)
+	user = models.User{Login: u.Login, Email: u.Email, Password: u.Password}
+	user.AddUser(db)
 	res, err := json.Marshal(&user)
 	if err != nil {
 		log.Println("error while Marshaling in /user")
@@ -110,18 +106,22 @@ func signUp(w http.ResponseWriter, r *http.Request) {
 	// SET COOKIE
 	cookie := http.Cookie{
 		Name:     "session_id",
-		Value:    "testCookie",
+		Value:    "testCookie"+user.Login,
 		Expires:  time.Now().Add(30 * 24 * time.Hour),
 		HttpOnly: true,
-		Secure: true,
+		Secure:   false,
 	}
-	dataBase.AddCookie(cookie.Value, &user)
+	if os.Getenv("ENV") == "production" {
+		cookie.Secure = true
+	}
+	session := models.Session{cookie.Value, user.Id}
+	session.AddCookie(db)
 	http.SetCookie(w, &cookie)
 
 	w.Write(res)
 }
 
-func deleteUser(w http.ResponseWriter, r *http.Request) {
+func deleteUser(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	body, err := ioutil.ReadAll(r.Body)
 
 	if err != nil {
@@ -136,36 +136,36 @@ func deleteUser(w http.ResponseWriter, r *http.Request) {
 	err = json.Unmarshal(body, &u)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write(generateError(MyError{"wrong request format"}))
+		w.Write(generateError(models.MyError{r.URL.Path,"wrong request format",err}))
 		return
 	}
 	err = validator.ValidateLogin(u.Login)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write(generateError(MyError{"bad login"}))
+		w.Write(generateError(models.MyError{r.URL.Path,"bad login",err}))
 		return
 	}
-	user, exist := dataBase.GetUserByLogin(u.Login)
-	if !exist {
-		w.Write(generateError(MyError{"User does not exist"}))
+	var user models.User
+	if !user.GetUserByLogin(db, u.Login) {
+		w.Write(generateError(models.MyError{r.URL.Path,"User does not exist",models.UserDoesNotExist(u.Login)}))
 		return
 	}
-	dataBase.DeleteUser(user)
+	user.DeleteUser(db)
 	w.WriteHeader(http.StatusOK)
 }
 
-func updateUser(w http.ResponseWriter, r *http.Request) {
+func updateUser(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	_, err := r.Cookie("session_id")
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
-		w.Write(generateError(MyError{"authorization required"}))
+		w.Write(generateError(models.MyError{r.URL.Path,"authorization required",err}))
 		return
 	}
 
 	body, err := ioutil.ReadAll(r.Body)
 
 	if err != nil {
-		log.Println("error while reading body in /user")
+		log.Println("error while reading body in /user",err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -174,42 +174,42 @@ func updateUser(w http.ResponseWriter, r *http.Request) {
 		NewPassword string `json:"new_password,omitempty"`
 		Password    string `json:"password"`
 		Email       string `json:"email,omitempty"`
-		Score       int    `json:"score,omitempty"`
+		Score       int64    `json:"score,omitempty"`
 	}
 	err = json.Unmarshal(body, &u)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write(generateError(MyError{"wrong request format"}))
+		w.Write(generateError(models.MyError{r.URL.Path,"wrong request format",err}))
 		return
 	}
 	err = validator.ValidateLogin(u.Login)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write(generateError(MyError{"bad login"}))
+		w.Write(generateError(models.MyError{r.URL.Path,"bad login",err}))
 		return
 	}
-	user, exist := dataBase.GetUserByLogin(u.Login)
-	if !exist {
+	var user models.User
+	if !user.GetUserByLogin(db,u.Login) {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write(generateError(MyError{"User does not exist"}))
+		w.Write(generateError(models.MyError{r.URL.Path,"User does not exist",err}))
 		return
 	}
 
 	if user.Password != u.Password {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write(generateError(MyError{"wrong password"}))
+		w.Write(generateError(models.MyError{r.URL.Path,"wrong password",fmt.Errorf("")}))
 		return
 	}
 	var newPassword string = user.Password
 	var newEmail string = user.Email
-	var newScore int = user.Score
+	var newScore int64 = 0
 	if u.NewPassword != "" {
 		newPassword = u.NewPassword
 	}
 	err = validator.ValidatePassword(newPassword)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write(generateError(MyError{"bad New password"}))
+		w.Write(generateError(models.MyError{r.URL.Path,"bad New password",err}))
 		return
 	}
 	if u.Email != "" {
@@ -218,17 +218,29 @@ func updateUser(w http.ResponseWriter, r *http.Request) {
 	err = validator.ValidateEmail(newEmail)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write(generateError(MyError{"bad New email"}))
+		w.Write(generateError(models.MyError{r.URL.Path,"bad New email",err}))
 		return
 	}
 	if u.Score != 0 {
 		newScore = u.Score
 	}
 
-	newUser := models.User{user.Id, u.Login, newPassword, newEmail, newScore}
-	dataBase.UpdateUser(&newUser)
+	newUser := models.User{user.Id, u.Login, newPassword, newEmail}
+	newUser.UpdateUser(db)
+	game := models.Game{newScore,user.Id}
+	game.UpdateScore(db)
+	var result struct {
+		Id       int64    `json:"user_id"`
+		Login    string `json:"login"`
+		Email    string `json:"email"`
+		Score int64 `json:"score"`
+	}
+	result.Id = newUser.Id
+	result.Login = newUser.Login
+	result.Email = newUser.Email
+	result.Score = game.Score
 	w.WriteHeader(http.StatusOK)
-	res, err := json.Marshal(&newUser)
+	res, err := json.Marshal(&result)
 	if err != nil {
 		log.Println("error while Marshaling in /user")
 		w.WriteHeader(http.StatusInternalServerError)
@@ -237,37 +249,87 @@ func updateUser(w http.ResponseWriter, r *http.Request) {
 	w.Write(res)
 }
 
-var UserHandler = func(w http.ResponseWriter, r *http.Request) {
+//var UserHandler = func(w http.ResponseWriter, r *http.Request) {
+//	w.Header().Set("content-type", "application/json")
+//
+//	switch r.Method {
+//
+//	case http.MethodGet:
+//		leaders(w, r)
+//	case http.MethodPost:
+//		signUp(w, r)
+//	case http.MethodDelete:
+//		deleteUser(w, r)
+//	case http.MethodPut:
+//		updateUser(w, r)
+//	}
+//
+//}
+
+type UserHandler struct {
+	Db *sql.DB
+}
+
+func (h *UserHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("content-type", "application/json")
 
 	switch r.Method {
 
 	case http.MethodGet:
-		leaders(w, r)
+		leaders(w, r, h.Db)
 	case http.MethodPost:
-		signUp(w, r)
+		signUp(w, r, h.Db)
 	case http.MethodDelete:
-		deleteUser(w, r)
+		deleteUser(w, r, h.Db)
 	case http.MethodPut:
-		updateUser(w, r)
+		updateUser(w, r, h.Db)
 	}
-
 }
 
-var UserById = func(w http.ResponseWriter, r *http.Request) {
+//var UserById = func(w http.ResponseWriter, r *http.Request) {
+//	w.Header().Set("content-type", "application/json")
+//	url := r.URL.Path
+//	url = strings.Trim(url, "/user/")
+//	id, err := strconv.Atoi(url)
+//	if err != nil {
+//		w.WriteHeader(http.StatusBadRequest)
+//		w.Write(generateError(MyError{"Bad URL"}))
+//		return
+//	}
+//	u, exist := dataBase.GetUserByID(id)
+//	if !exist {
+//		w.WriteHeader(http.StatusBadRequest)
+//		w.Write(generateError(MyError{"user does not exist"}))
+//		return
+//	}
+//	user, err := json.Marshal(&u)
+//	if err != nil {
+//		log.Println("error while Marshaling in /user/")
+//		w.WriteHeader(http.StatusInternalServerError)
+//		return
+//	}
+//	w.Write(user)
+//}
+
+type UserById struct {
+	Db *sql.DB
+}
+
+func (h *UserById) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("content-type", "application/json")
 	url := r.URL.Path
 	url = strings.Trim(url, "/user/")
-	id, err := strconv.Atoi(url)
+	id, err := strconv.ParseInt(url,10,64)
 	if err != nil {
+		log.Printf("At URL %s. Error:", r.URL.Path)
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write(generateError(MyError{"Bad URL"}))
+		w.Write(generateError(models.MyError{r.URL.Path,"Bad URL",err}))
 		return
 	}
-	u, exist := dataBase.GetUserByID(id)
-	if !exist {
+	var u models.User
+	if !u.GetUserByID(h.Db,id) {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write(generateError(MyError{"user does not exist"}))
+		w.Write(generateError(models.MyError{r.URL.Path,"user does not exist",models.UserDoesNotExist(u.Login)}))
 		return
 	}
 	user, err := json.Marshal(&u)
