@@ -44,7 +44,7 @@ func (db *DB) Init(filename string) {
 	str := string(bs)
 	_, err = db.DataBase.Exec(str)
 	if err != nil {
-		log.Println("error while db Init Executing script")
+		log.Println("error while db Init Executing script",err)
 		return
 	}
 
