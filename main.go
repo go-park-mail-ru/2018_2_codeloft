@@ -67,6 +67,7 @@ func main() {
 	} else {
 		log.Printf("file %s does not exist\n", filepath)
 	}
+
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/", handlers.MainPage)
