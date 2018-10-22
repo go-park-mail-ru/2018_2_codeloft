@@ -1,6 +1,8 @@
+CREATE EXTENSION  IF NOT EXISTS citext;
+
 create table if not exists users (
   id bigserial not null primary key,
-  login varchar(30) unique ,
+  login citext unique ,
   password varchar(30),
   email varchar(30)
 );
