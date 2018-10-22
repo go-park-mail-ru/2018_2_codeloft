@@ -19,6 +19,7 @@ type DB struct {
 
 func (db *DB) ConnectDataBase() {
 	var dbInfo string
+	// Если есть DB_URL то мы используем его(для хероку)
 	if db.DB_URL != "" {
 		dbInfo = db.DB_URL
 	} else {

@@ -11,20 +11,26 @@ import (
 	"os"
 	"time"
 	"github.com/go-park-mail-ru/2018_2_codeloft/validator"
+	"github.com/go-park-mail-ru/2018_2_codeloft/services"
 )
 
 func checkAuth(w http.ResponseWriter, r *http.Request, db *sql.DB) {
-	cookie, err := r.Cookie("session_id")
-	if err != nil {
-		fmt.Println("cant get cookie",err)
+	s := &models.Session{}
+	if !services.GetCookie(s, r, db) {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
-	var s models.Session
-	if !s.CheckCookie(db, cookie.Value) {
-		w.WriteHeader(http.StatusUnauthorized)
-		return
-	}
+
+	// cookie, err := r.Cookie("session_id")
+	// if err != nil {
+	// 	w.WriteHeader(http.StatusUnauthorized)
+	// 	return
+	// }
+	// var s models.Session
+	// if !s.CheckCookie(db, cookie.Value) {
+	// 	w.WriteHeader(http.StatusUnauthorized)
+	// 	return
+	// }
 	var user models.User
 	if !user.GetUserByID(db, s.User_id) {
 		w.WriteHeader(http.StatusUnauthorized)
@@ -44,6 +50,12 @@ func checkAuth(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 }
 
 func signIn(w http.ResponseWriter, r *http.Request, db *sql.DB) {
+	s := &models.Session{}
+	// Если уже залогинен
+	if services.GetCookie(s, r, db) {
+		w.WriteHeader(http.StatusConflict)
+		return
+	}
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		log.Println("error while reading body in /session",err )
@@ -77,24 +89,25 @@ func signIn(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		w.Write(generateError(models.MyError{r.URL.Path,"wrong password",fmt.Errorf("wrong password")}))
 		return
 	}
-	cookie := http.Cookie{
-		Name:     "session_id",
-		Value:    "testCookie"+dbUser.Login,
-		Expires:  time.Now().Add(30 * 24 * time.Hour),
-		HttpOnly: true,
-		Secure:   false,
-	}
+	// cookie := http.Cookie{
+	// 	Name:     "session_id",
+	// 	Value:    "testCookie"+dbUser.Login,
+	// 	Expires:  time.Now().Add(30 * 24 * time.Hour),
+	// 	HttpOnly: true,
+	// 	Secure:   false,
+	// }
+	cookie := services.GenerateCookie(dbUser.Login)
 	if os.Getenv("ENV") == "production" {
 		cookie.Secure = true
 	}
-	s := models.Session{cookie.Value, dbUser.Id}
+	s = &models.Session{cookie.Value, dbUser.Id}
 	err = s.AddCookie(db)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write(generateError(models.MyError{r.URL.Path, "Cant AddCookie",err}))
 		return
 	}
-	http.SetCookie(w, &cookie)
+	http.SetCookie(w, cookie)
 	res, err := json.Marshal(&dbUser)
 	if err != nil {
 		log.Println("error while Marshaling in /session POST")
@@ -107,16 +120,22 @@ func signIn(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 }
 
 func logout(w http.ResponseWriter, r *http.Request, db *sql.DB) {
-	cookie, err := r.Cookie("session_id")
-	if err != nil {
-		w.WriteHeader(http.StatusUnauthorized)
+	// cookie, err := r.Cookie("session_id")
+	// if err != nil {
+	// 	w.WriteHeader(http.StatusUnauthorized)
+	// 	return
+	// }
+	// var s models.Session
+	// if !s.CheckCookie(db, cookie.Value) {
+	// 	w.WriteHeader(http.StatusUnauthorized)
+	// 	return
+	// }
+	s := &models.Session{}
+	if !services.GetCookie(s, r, db) {
+		w.WriteHeader(http.StatusConflict)
 		return
 	}
-	var s models.Session
-	if !s.CheckCookie(db, cookie.Value) {
-		w.WriteHeader(http.StatusUnauthorized)
-		return
-	}
+	cookie, _ := r.Cookie("session_id")
 	cookie.Expires = time.Now()
 	http.SetCookie(w, cookie)
 	s.DeleteCookie(db)
@@ -137,6 +156,8 @@ func (h *SessionHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		signIn(w, r, h.Db)
 	case http.MethodDelete:
 		logout(w, r, h.Db)
+	default:
+		w.WriteHeader(http.StatusMethodNotAllowed)	
 	}
 }
 

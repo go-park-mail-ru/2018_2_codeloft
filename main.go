@@ -20,7 +20,7 @@ func panicMiddleware(next http.Handler) http.Handler {
 		//fmt.Println("panicMiddleware", r.URL.Path)
 		defer func() {
 			if err := recover(); err != nil {
-				log.Printf("in URL: %v\n\tWith method %v", r.URL.Path, r.Method)
+				log.Printf("in URL: %v With method %v\n", r.URL.Path, r.Method)
 				log.Println("recovered", err)
 
 			}
@@ -29,42 +29,14 @@ func panicMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+//TO DO
 func logMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		//fmt.Println("panicMiddleware", r.URL.Path)
 		fmt.Printf("URL: %v; Method: %v; Origin: %v\n", r.URL.Path, r.Method, r.Header.Get("Origin"))
 		next.ServeHTTP(w, r)
 	})
 }
 
-//func CreateTable(db *sql.DB){
-//	db.Exec("create table if not exists users (" +
-//	"id bigserial not null primary key,"+
-//		"login varchar(30) unique,"+
-//		"password varchar(30),"+
-//		"email varchar(30),"+
-//		"score int"+
-//	");" )
-//}
-//
-//func GenerateUsers(num int,db *sql.DB) {
-//	for i := 0; i < num; i++ {
-//		score, _ := strconv.Atoi(fake.DigitsN(8))
-//		login := fake.FirstName()
-//		for {
-//			if _, exist := db.Users[login]; !exist {
-//				break
-//			}
-//			login = fake.FirstName()
-//		}
-//		u := models.User{0, login, fake.SimplePassword(), fake.EmailAddress(), score}
-//		db.Exec("INSERT INTO users()")
-//
-//	}
-//	u := models.User{db.Lastid, "kek", "qwerty12345", "kek@mail.ru", 0}
-//	db.SaveUser(&u)
-//	//db.ShowUsers()
-//}
 
 func main() {
 	db := &database.DB{}
@@ -86,38 +58,15 @@ func main() {
 		db.DB_PASSWORD = os.Args[2]
 	}
 	db.DB_NAME = "codeloft"
-	db.DB_URL = os.Getenv("DATABASE_URL")
+	db.DB_URL = os.Getenv("DATABASE_URL") // for heroku
 	db.ConnectDataBase()
 	defer db.DataBase.Close()
-	//gopath := os.Getenv("GOPATH")
 	var filepath string = "resources/initdb.sql"
-
-	//if _, err := os.Stat(gopath + "/src/github.com/go-park-mail-ru/2018_2_codeloft/resources/initdb.sql"); err != nil {
-	//	filepath = gopath + "/src/github.com/go-park-mail-ru/2018_2_codeloft/resources/initdb.sql"
-	//} else {
-	//	filepath = "../src/github.com/go-park-mail-ru/2018_2_codeloft/resources/initdb.sql"
-	//	filepath = "resources/initdb.sql"
-	//}
 	if _,err := os.Stat(filepath); err == nil {
 		db.Init(filepath)
 	} else {
 		log.Printf("file %s does not exist\n", filepath)
 	}
-
-	//rows, _ := db.DataBase.Query("select * from users")
-	//fmt.Println(rows)
-	//if rows != nil {
-	//	for rows.Next() {
-	//		var id int
-	//		var login string
-	//		var password string
-	//		var email string
-	//		var score int
-	//		rows.Scan(&id, &login, &password, &email, &score)
-	//		user := models.User{id, login, password, email}
-	//		fmt.Println(user)
-	//	}
-	//}
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/", handlers.MainPage)
@@ -132,11 +81,9 @@ func main() {
 				strings.Contains(origin, "localhost") ||
 				strings.Contains(origin, "127.0.0.1")
 		},
-		//AllowedOrigins:   []string{"http://localhost:3000"},
 		AllowCredentials: true,
 		AllowedMethods:   []string{"GET", "POST", "DELETE", "PUT"},
 		AllowedHeaders:   []string{"Content-Type"},
-		//Debug:            true,
 	})
 	logHandler := logMiddleware(mux)
 	corsMW := c.Handler(logHandler)

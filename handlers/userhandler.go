@@ -10,8 +10,8 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"time"
-
+	
+	"github.com/go-park-mail-ru/2018_2_codeloft/services"
 	"github.com/go-park-mail-ru/2018_2_codeloft/models"
 	"github.com/go-park-mail-ru/2018_2_codeloft/validator"
 )
@@ -31,13 +31,30 @@ func leaders(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		w.Write(generateError(models.MyError{r.URL.Path,"error while parsing form",err}))
 		return
 	}
-	page, err := strconv.Atoi(r.FormValue("page"))
-	if err != nil {
-		page = 1
+	var page int
+	var pageSize int
+	
+	checkParam := func (w http.ResponseWriter, r *http.Request, param string) (int,error){
+		param_str := r.FormValue(param)
+		var paramReturn int
+		if param_str == "" {
+			paramReturn = 0
+		} else {
+			paramReturn, err = strconv.Atoi(r.FormValue(param))
+			if err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				w.Write(generateError(models.MyError{r.URL.Path, "Bad params",err}))
+				return -1, err
+			}
+		}
+		return paramReturn,nil
 	}
-	pageSize, err := strconv.Atoi(r.FormValue("page_size"))
-	if err != nil {
-		pageSize = 0
+
+	if page, err = checkParam(w, r, "page"); err != nil {
+		return
+	}
+	if pageSize, err = checkParam(w,r,"page_size"); err != nil {
+		return
 	}
 	if page <= 0 {
 		page = 1
@@ -53,6 +70,12 @@ func leaders(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 }
 
 func signUp(w http.ResponseWriter, r *http.Request, db *sql.DB) {
+	s := &models.Session{}
+	if services.GetCookie(s, r, db) {
+		w.WriteHeader(http.StatusConflict)
+		return
+	}
+
 	body, err := ioutil.ReadAll(r.Body)
 
 	if err != nil {
@@ -104,55 +127,18 @@ func signUp(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		return
 	}
 	// SET COOKIE
-	cookie := http.Cookie{
-		Name:     "session_id",
-		Value:    "testCookie"+user.Login,
-		Expires:  time.Now().Add(30 * 24 * time.Hour),
-		HttpOnly: true,
-		Secure:   false,
-	}
+	cookie := services.GenerateCookie(user.Login)
 	if os.Getenv("ENV") == "production" {
 		cookie.Secure = true
 	}
 	session := models.Session{cookie.Value, user.Id}
 	session.AddCookie(db)
-	http.SetCookie(w, &cookie)
+	http.SetCookie(w, cookie)
 
 	w.Write(res)
 }
 
-func deleteUser(w http.ResponseWriter, r *http.Request, db *sql.DB) {
-	body, err := ioutil.ReadAll(r.Body)
 
-	if err != nil {
-		log.Println("error while reading body in /user")
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	var u struct {
-		Login    string `json:"login"`
-		Password string `json:"password"`
-	}
-	err = json.Unmarshal(body, &u)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write(generateError(models.MyError{r.URL.Path,"wrong request format",err}))
-		return
-	}
-	err = validator.ValidateLogin(u.Login)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write(generateError(models.MyError{r.URL.Path,"bad login",err}))
-		return
-	}
-	var user models.User
-	if !user.GetUserByLogin(db, u.Login) {
-		w.Write(generateError(models.MyError{r.URL.Path,"User does not exist",models.UserDoesNotExist(u.Login)}))
-		return
-	}
-	user.DeleteUser(db)
-	w.WriteHeader(http.StatusOK)
-}
 
 func updateUser(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	_, err := r.Cookie("session_id")
@@ -249,22 +235,6 @@ func updateUser(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	w.Write(res)
 }
 
-//var UserHandler = func(w http.ResponseWriter, r *http.Request) {
-//	w.Header().Set("content-type", "application/json")
-//
-//	switch r.Method {
-//
-//	case http.MethodGet:
-//		leaders(w, r)
-//	case http.MethodPost:
-//		signUp(w, r)
-//	case http.MethodDelete:
-//		deleteUser(w, r)
-//	case http.MethodPut:
-//		updateUser(w, r)
-//	}
-//
-//}
 
 type UserHandler struct {
 	Db *sql.DB
@@ -279,10 +249,10 @@ func (h *UserHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		leaders(w, r, h.Db)
 	case http.MethodPost:
 		signUp(w, r, h.Db)
-	case http.MethodDelete:
-		deleteUser(w, r, h.Db)
 	case http.MethodPut:
 		updateUser(w, r, h.Db)
+	default:
+		w.WriteHeader(http.StatusMethodNotAllowed)
 	}
 }
 
@@ -315,8 +285,7 @@ type UserById struct {
 	Db *sql.DB
 }
 
-func (h *UserById) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("content-type", "application/json")
+func userGet (w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	url := r.URL.Path
 	url = strings.Trim(url, "/user/")
 	id, err := strconv.ParseInt(url,10,64)
@@ -327,9 +296,9 @@ func (h *UserById) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var u models.User
-	if !u.GetUserByID(h.Db,id) {
+	if !u.GetUserByID(db,id) {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write(generateError(models.MyError{r.URL.Path,"user does not exist",models.UserDoesNotExist(u.Login)}))
+		//w.Write(generateError(models.MyError{r.URL.Path,"user does not exist",models.UserDoesNotExist(u.Login)}))
 		return
 	}
 	user, err := json.Marshal(&u)
@@ -339,4 +308,76 @@ func (h *UserById) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Write(user)
+}
+
+func userDelete(w http.ResponseWriter, r *http.Request, db *sql.DB){
+	url := r.URL.Path
+	url = strings.Trim(url, "/user/")
+	id, err := strconv.ParseInt(url,10,64)
+	if err != nil {
+		log.Printf("At URL %s. Error:", r.URL.Path)
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write(generateError(models.MyError{r.URL.Path,"Bad URL",err}))
+		return
+	}
+	var user models.User
+	if !user.GetUserByID(db, id) {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	s := &models.Session{}
+	if !services.GetCookie(s, r, db) {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+	if id != s.User_id {
+		w.WriteHeader(http.StatusConflict)
+		w.Write(generateError(models.MyError{r.URL.Path,"user id != url id", fmt.Errorf("user_id = %d. url ud = %%d",s.User_id, id)}))
+		return
+	}
+	
+
+	// body, err := ioutil.ReadAll(r.Body)
+
+	// if err != nil {
+	// 	log.Println("error while reading body in /user")
+	// 	w.WriteHeader(http.StatusInternalServerError)
+	// 	return
+	// }
+	// var u struct {
+	// 	Login    string `json:"login"`
+	// 	Password string `json:"password"`
+	// }
+	// err = json.Unmarshal(body, &u)
+	// if err != nil {
+	// 	w.WriteHeader(http.StatusBadRequest)
+	// 	w.Write(generateError(models.MyError{r.URL.Path,"wrong request format",err}))
+	// 	return
+	// }
+	// err = validator.ValidateLogin(u.Login)
+	// if err != nil {
+	// 	w.WriteHeader(http.StatusBadRequest)
+	// 	w.Write(generateError(models.MyError{r.URL.Path,"bad login",err}))
+	// 	return
+	// }
+	// var user models.User
+	// if !user.GetUserByLogin(db, u.Login) {
+	// 	w.Write(generateError(models.MyError{r.URL.Path,"User does not exist",models.UserDoesNotExist(u.Login)}))
+	// 	return
+	// }
+	user.DeleteUser(db)
+	w.WriteHeader(http.StatusOK)
+}
+
+func (h *UserById) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("content-type", "application/json")
+	switch r.Method{
+
+	case http.MethodGet:
+		userGet(w,r, h.Db)
+	case http.MethodDelete:
+		userDelete(w, r, h.Db)
+	default:
+		w.WriteHeader(http.StatusMethodNotAllowed)
+	}
 }
