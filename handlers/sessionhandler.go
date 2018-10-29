@@ -1,19 +1,92 @@
+// Package classification Petstore API.
+//
+// the purpose of this application is to provide an application
+// that is using plain go code to define an API
+//
+// This should demonstrate all the possible comment annotations
+// that are available to turn go code into a fully compliant swagger 2.0 spec
+//
+// Terms Of Service:
+//
+// there are no TOS at this moment, use at your own risk we take no responsibility
+//
+//     Schemes: http, https
+//     Host: localhost
+//     BasePath: /v2
+//     Version: 0.0.1
+//     License: MIT http://opensource.org/licenses/MIT
+//     Contact: John Doe<john.doe@example.com> http://john.doe.com
+//
+//     Consumes:
+//     - application/json
+//     - application/xml
+//
+//     Produces:
+//     - application/json
+//     - application/xml
+//
+//     Security:
+//     - api_key:
+//
+//     SecurityDefinitions:
+//     api_key:
+//          type: apiKey
+//          name: KEY
+//          in: header
+//     oauth2:
+//         type: oauth2
+//         authorizationUrl: /oauth2/auth
+//         tokenUrl: /oauth2/token
+//         in: header
+//         scopes:
+//           bar: foo
+//         flow: accessCode
+//
+//     Extensions:
+//     x-meta-value: value
+//     x-meta-array:
+//       - value1
+//       - value2
+//     x-meta-array-obj:
+//       - name: obj
+//         value: field
+//
+// swagger:meta
 package handlers
 
 import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"github.com/go-park-mail-ru/2018_2_codeloft/models"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"time"
-	"github.com/go-park-mail-ru/2018_2_codeloft/validator"
+
+	"github.com/go-park-mail-ru/2018_2_codeloft/models"
 	"github.com/go-park-mail-ru/2018_2_codeloft/services"
+	"github.com/go-park-mail-ru/2018_2_codeloft/validator"
 )
 
+// swagger:operation GET /session checkAuth
+//
+// Checks auth with cookie
+// ---
+// consumes:
+// - text/plain
+// produces:
+// - text/plain
+// parameters:
+// - name: name
+//   in: path
+//   description: Name to be returned.
+//   required: true
+//   type: string
+// responses:
+//   '200':
+//     description: The hello message
+//     type: string
 func checkAuth(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	s := &models.Session{}
 	if !services.GetCookie(s, r, db) {
@@ -34,7 +107,7 @@ func checkAuth(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	var user models.User
 	if !user.GetUserByID(db, s.User_id) {
 		w.WriteHeader(http.StatusUnauthorized)
-		w.Write(generateError(models.MyError{r.URL.Path, "User Does Not Exist in Users table, but exist in session",fmt.Errorf("")}))
+		w.Write(generateError(models.MyError{r.URL.Path, "User Does Not Exist in Users table, but exist in session", fmt.Errorf("")}))
 		log.Println("User Does Not Exist in Users table, but exist in session", s.Value, s.User_id)
 		return
 	}
@@ -49,6 +122,24 @@ func checkAuth(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	w.Write(res)
 }
 
+// swagger:operation POST /session signIn
+//
+// Logins
+// ---
+// consumes:
+// - text/plain
+// produces:
+// - text/plain
+// parameters:
+// - name: name
+//   in: path
+//   description: Name to be returned.
+//   required: true
+//   type: string
+// responses:
+//   '200':
+//     description: The hello message
+//     type: string
 func signIn(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	s := &models.Session{}
 	// Если уже залогинен
@@ -58,7 +149,7 @@ func signIn(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	}
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		log.Println("error while reading body in /session",err )
+		log.Println("error while reading body in /session", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -69,24 +160,24 @@ func signIn(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	err = json.Unmarshal(body, &u)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write(generateError(models.MyError{r.URL.Path,"wrong requst format",err}))
+		w.Write(generateError(models.MyError{r.URL.Path, "wrong requst format", err}))
 		return
 	}
 	err = validator.ValidateLogin(u.Login)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write(generateError(models.MyError{r.URL.Path,"bad login",err}))
+		w.Write(generateError(models.MyError{r.URL.Path, "bad login", err}))
 		return
 	}
 	var dbUser models.User
 	if !dbUser.GetUserByLogin(db, u.Login) {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write(generateError(models.MyError{r.URL.Path,"User does not exist",models.UserDoesNotExist(u.Login)}))
+		w.Write(generateError(models.MyError{r.URL.Path, "User does not exist", models.UserDoesNotExist(u.Login)}))
 		return
 	}
 	if dbUser.Password != u.Password {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write(generateError(models.MyError{r.URL.Path,"wrong password",fmt.Errorf("wrong password")}))
+		w.Write(generateError(models.MyError{r.URL.Path, "wrong password", fmt.Errorf("wrong password")}))
 		return
 	}
 	// cookie := http.Cookie{
@@ -104,7 +195,7 @@ func signIn(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	err = s.AddCookie(db)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(generateError(models.MyError{r.URL.Path, "Cant AddCookie",err}))
+		w.Write(generateError(models.MyError{r.URL.Path, "Cant AddCookie", err}))
 		return
 	}
 	http.SetCookie(w, cookie)
@@ -119,6 +210,24 @@ func signIn(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	w.Write(res)
 }
 
+// swagger:operation DELETE /session LogOut
+//
+// LogOut and delete cookie
+// ---
+// consumes:
+// - text/plain
+// produces:
+// - text/plain
+// parameters:
+// - name: name
+//   in: path
+//   description: Name to be returned.
+//   required: true
+//   type: string
+// responses:
+//   '200':
+//     description: The hello message
+//     type: string
 func logout(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	// cookie, err := r.Cookie("session_id")
 	// if err != nil {
@@ -157,7 +266,7 @@ func (h *SessionHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case http.MethodDelete:
 		logout(w, r, h.Db)
 	default:
-		w.WriteHeader(http.StatusMethodNotAllowed)	
+		w.WriteHeader(http.StatusMethodNotAllowed)
 	}
 }
 
