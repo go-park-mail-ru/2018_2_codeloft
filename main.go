@@ -1,6 +1,7 @@
 package main
 
 import (
+	"2018_2_codeloft/logger"
 	"fmt"
 	"log"
 	"net/http"
@@ -12,6 +13,7 @@ import (
 	"github.com/go-park-mail-ru/2018_2_codeloft/database"
 	"github.com/go-park-mail-ru/2018_2_codeloft/handlers"
 
+	//"github.com/go-park-mail-ru/2018_2_codeloft/logger"
 	"github.com/rs/cors"
 
 	_ "github.com/lib/pq"
@@ -19,12 +21,15 @@ import (
 
 func panicMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		//fmt.Println("panicMiddleware", r.URL.Path)
 		defer func() {
 			if err := recover(); err != nil {
-				log.Printf("in URL: %v With method %v\n", r.URL.Path, r.Method)
-				log.Println("recovered", err)
-
+				zap.S().Errorw("Recovered",
+					"URL", r.URL.Path,
+					"Method", r.Method,
+					"Origin", r.Header.Get("Origin"),
+					"Remote address", r.RemoteAddr,
+					"Error", err,
+				)
 			}
 		}()
 		next.ServeHTTP(w, r)
@@ -34,16 +39,23 @@ func panicMiddleware(next http.Handler) http.Handler {
 //TO DO
 func logMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		logger, _ := zap.NewProduction()
-		defer logger.Sync()
-		sugar := logger.Sugar()
-		sugar.Infof("URL: %v; Method: %v; Origin: %v\n", r.URL.Path, r.Method, r.Header.Get("Origin"))
-		//fmt.Printf("URL: %v; Method: %v; Origin: %v\n", r.URL.Path, r.Method, r.Header.Get("Origin"))
+		zap.L().Info("REQUEST",
+			zap.String("URL", r.URL.Path),
+			zap.String("Method", r.Method),
+			zap.String("Origin", r.Header.Get("Origin")),
+			zap.String("Remote addr", r.RemoteAddr),
+		)
 		next.ServeHTTP(w, r)
 	})
 }
 
 func main() {
+	zapLogger, err := logger.InitLogger()
+	if err != nil {
+		log.Fatalf("Can not initialize zap logger Error %v", err)
+	}
+	defer zapLogger.Sync()
+
 	db := &database.DB{}
 	if len(os.Args) < 3 {
 		fmt.Println("Usage ./2018_2_codeloft <username> <password>")
@@ -51,11 +63,11 @@ func main() {
 		var exist bool
 		db.DB_USERNAME, exist = os.LookupEnv("USERNAME")
 		if !exist {
-			log.Println("USERNAME don't set")
+			zap.L().Info("USERNAME don't set")
 		}
 		db.DB_PASSWORD, exist = os.LookupEnv("PASSWORD")
 		if !exist {
-			log.Println("PASSWORD don't set")
+			zap.L().Info("PASSWORD don't set")
 		}
 	} else {
 		db.DB_USERNAME = os.Args[1]
@@ -69,7 +81,7 @@ func main() {
 	if _, err := os.Stat(filepath); err == nil {
 		db.Init(filepath)
 	} else {
-		log.Printf("file %s does not exist\n", filepath)
+		zap.S().Warn("file does not exist\n", filepath)
 	}
 
 	mux := http.NewServeMux()
@@ -95,7 +107,7 @@ func main() {
 	panicMW := panicMiddleware(corsMW)
 	port := os.Getenv("PORT") // for heroku
 	if port != "" {
-		log.Println("get port from env: ", port)
+		zap.S().Infow("get port from env: ", port)
 	} else {
 		port = "8080"
 	}
