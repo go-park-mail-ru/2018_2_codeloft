@@ -72,7 +72,6 @@ func main() {
 	mux.Handle("/session", &handlers.SessionHandler{db.DataBase})
 	mux.Handle("/user/", &handlers.UserById{db.DataBase})
 
-	fmt.Println("starting server on http://127.0.0.1:8080")
 	c := cors.New(cors.Options{
 		AllowOriginFunc: func(origin string) bool {
 			return strings.Contains(origin, "codeloft") ||
@@ -93,5 +92,6 @@ func main() {
 		port = "8080"
 	}
 	addr := fmt.Sprintf(":%s", port)
+	fmt.Println("starting server on http://127.0.0.1:8080")
 	http.ListenAndServe(addr, panicMW)
 }
