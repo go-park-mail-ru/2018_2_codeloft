@@ -10,15 +10,16 @@ import (
 	"os"
 )
 
-func GetCookie(s *models.Session,r *http.Request, db *sql.DB) bool {
+func GetCookie(r *http.Request, db *sql.DB) *models.Session {
 	cookie, err := r.Cookie("session_id")
 	if err != nil {
-		return false
+		return nil
 	}
+	s := &models.Session{}
 	if !s.CheckCookie(db, cookie.Value) {
-		return false
+		return nil
 	}
-	return true
+	return s
 }
 
 func GenerateCookie(val string) *http.Cookie {
