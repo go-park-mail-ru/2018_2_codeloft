@@ -15,8 +15,6 @@ type DB struct {
 	DB_PASSWORD string
 }
 
-
-
 func (db *DB) ConnectDataBase() {
 	var dbInfo string
 	// Если есть DB_URL то мы используем его(для хероку)
@@ -27,7 +25,7 @@ func (db *DB) ConnectDataBase() {
 	}
 	database, err := sql.Open("postgres", dbInfo)
 	if err != nil {
-		fmt.Println("Can't connect to database",err)
+		fmt.Println("Can't connect to database", err)
 	}
 	err = database.Ping()
 	if err != nil {
@@ -45,7 +43,7 @@ func (db *DB) Init(filename string) {
 	str := string(bs)
 	_, err = db.DataBase.Exec(str)
 	if err != nil {
-		log.Println("error while db Init Executing script",err)
+		log.Println("error while db Init Executing script", err)
 		return
 	}
 

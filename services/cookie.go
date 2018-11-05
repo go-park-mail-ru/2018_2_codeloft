@@ -1,16 +1,16 @@
 package services
 
 import (
+	"database/sql"
+	"fmt"
+	"github.com/go-park-mail-ru/2018_2_codeloft/models"
 	"golang.org/x/crypto/sha3"
 	"net/http"
-	"fmt"
-	"time"
-	"database/sql"
-	"github.com/go-park-mail-ru/2018_2_codeloft/models"
 	"os"
+	"time"
 )
 
-func GetCookie(s *models.Session,r *http.Request, db *sql.DB) bool {
+func GetCookie(s *models.Session, r *http.Request, db *sql.DB) bool {
 	cookie, err := r.Cookie("session_id")
 	if err != nil {
 		return false
@@ -22,7 +22,7 @@ func GetCookie(s *models.Session,r *http.Request, db *sql.DB) bool {
 }
 
 func GenerateCookie(val string) *http.Cookie {
-	buf := []byte(val+os.Getenv("USERNAME"))
+	buf := []byte(val + os.Getenv("USERNAME"))
 	h := make([]byte, 64)
 	sha3.ShakeSum256(h, buf)
 	cookie := http.Cookie{
@@ -34,4 +34,3 @@ func GenerateCookie(val string) *http.Cookie {
 	}
 	return &cookie
 }
-
