@@ -10,7 +10,6 @@ import (
 	"time"
 )
 
-
 func GetCookie(r *http.Request, db *sql.DB) *models.Session {
 	cookie, err := r.Cookie("session_id")
 	if err != nil {
