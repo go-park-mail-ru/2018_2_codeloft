@@ -4,7 +4,8 @@ import (
 	"database/sql"
 	"fmt"
 	"io/ioutil"
-	"log"
+
+	"go.uber.org/zap"
 )
 
 type DB struct {
@@ -14,8 +15,6 @@ type DB struct {
 	DB_USERNAME string
 	DB_PASSWORD string
 }
-
-
 
 func (db *DB) ConnectDataBase() {
 	var dbInfo string
@@ -27,11 +26,13 @@ func (db *DB) ConnectDataBase() {
 	}
 	database, err := sql.Open("postgres", dbInfo)
 	if err != nil {
-		fmt.Println("Can't connect to database",err)
+		fmt.Println("Can't connect to database", err)
 	}
 	err = database.Ping()
 	if err != nil {
-		log.Println("error in ping", err)
+		zap.L().Error("Error in field",
+			zap.Error(err),
+		)
 	}
 	db.DataBase = database
 }
@@ -39,13 +40,18 @@ func (db *DB) ConnectDataBase() {
 func (db *DB) Init(filename string) {
 	bs, err := ioutil.ReadFile(filename)
 	if err != nil {
-		log.Println("Cant read file:", filename, "error", err)
+		zap.L().Error("Cant read file",
+			zap.String("filename", filename),
+			zap.Error(err),
+		)
 		return
 	}
 	str := string(bs)
 	_, err = db.DataBase.Exec(str)
 	if err != nil {
-		log.Println("error while db Init Executing script",err)
+		zap.L().Error("Error while db Init Executing script",
+			zap.Error(err),
+		)
 		return
 	}
 

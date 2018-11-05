@@ -1,7 +1,9 @@
 package main
 
 import (
-	"2018_2_codeloft/logger"
+	//"2018_2_codeloft/database"
+	//"2018_2_codeloft/handlers"
+	//"2018_2_codeloft/logger"
 	"fmt"
 	"log"
 	"net/http"
@@ -13,7 +15,7 @@ import (
 	"github.com/go-park-mail-ru/2018_2_codeloft/database"
 	"github.com/go-park-mail-ru/2018_2_codeloft/handlers"
 
-	//"github.com/go-park-mail-ru/2018_2_codeloft/logger"
+	"github.com/go-park-mail-ru/2018_2_codeloft/logger"
 	"github.com/rs/cors"
 
 	_ "github.com/lib/pq"
@@ -112,5 +114,6 @@ func main() {
 		port = "8080"
 	}
 	addr := fmt.Sprintf(":%s", port)
-	http.ListenAndServe(addr, panicMW)
+	err = http.ListenAndServe(addr, panicMW)
+	fmt.Println(err)
 }
