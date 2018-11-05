@@ -209,10 +209,9 @@ func updateUser(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		newScore = u.Score
 	}
 
-	newUser := models.User{user.Id, u.Login, newPassword, newEmail}
+	newUser := models.User{user.Id, u.Login, newPassword, newEmail, newScore}
 	newUser.UpdateUser(db)
-	game := models.Game{newScore, user.Id}
-	game.UpdateScore(db)
+	newUser.UpdateScore(db)
 	var result struct {
 		Id    int64  `json:"user_id"`
 		Login string `json:"login"`
@@ -222,7 +221,7 @@ func updateUser(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	result.Id = newUser.Id
 	result.Login = newUser.Login
 	result.Email = newUser.Email
-	result.Score = game.Score
+	result.Score = newUser.Score
 	w.WriteHeader(http.StatusOK)
 	res, err := json.Marshal(&result)
 	if err != nil {
