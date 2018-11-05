@@ -86,8 +86,8 @@ func GetLeaders(db *sql.DB, page int, pageSize int) []leaders {
 	return slice
 }
 
-func (user *User) DeleteUser(db *sql.DB) error {
-	var u User
+func (user *User) DeleteUser(db *sql.DB) (error) {
+	u := &User{}
 	if !u.GetUserByLogin(db, user.Login) {
 		return UserDoesNotExist(user.Login)
 	}

@@ -15,8 +15,8 @@ import (
 )
 
 func checkAuth(w http.ResponseWriter, r *http.Request, db *sql.DB) {
-	s := &models.Session{}
-	if !services.GetCookie(s, r, db) {
+	var s *models.Session
+	if s = services.GetCookie(r, db); s == nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
@@ -50,9 +50,9 @@ func checkAuth(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 }
 
 func signIn(w http.ResponseWriter, r *http.Request, db *sql.DB) {
-	s := &models.Session{}
+	var s *models.Session
 	// Если уже залогинен
-	if services.GetCookie(s, r, db) {
+	if s = services.GetCookie(r, db); s != nil {
 		w.WriteHeader(http.StatusConflict)
 		return
 	}
@@ -131,8 +131,8 @@ func logout(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	// 	w.WriteHeader(http.StatusUnauthorized)
 	// 	return
 	// }
-	s := &models.Session{}
-	if !services.GetCookie(s, r, db) {
+	var s *models.Session
+	if s = services.GetCookie(r, db); s == nil {
 		w.WriteHeader(http.StatusConflict)
 		return
 	}

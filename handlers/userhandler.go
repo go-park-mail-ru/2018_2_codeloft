@@ -70,8 +70,8 @@ func leaders(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 }
 
 func signUp(w http.ResponseWriter, r *http.Request, db *sql.DB) {
-	s := &models.Session{}
-	if services.GetCookie(s, r, db) {
+	var s *models.Session
+	if s = services.GetCookie(r, db); s != nil {
 		w.WriteHeader(http.StatusConflict)
 		return
 	}
@@ -317,13 +317,14 @@ func userDelete(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		w.Write(generateError(models.MyError{r.URL.Path, "Bad URL", err}))
 		return
 	}
-	var user models.User
+	user := &models.User{}
 	if !user.GetUserByID(db, id) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	s := &models.Session{}
-	if !services.GetCookie(s, r, db) {
+	var s *models.Session
+
+	if s = services.GetCookie(r, db); s == nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
@@ -332,7 +333,7 @@ func userDelete(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		w.Write(generateError(models.MyError{r.URL.Path, "user id != url id", fmt.Errorf("user_id = %d. url ud = %%d", s.User_id, id)}))
 		return
 	}
-
+  
 	// body, err := ioutil.ReadAll(r.Body)
 
 	// if err != nil {
