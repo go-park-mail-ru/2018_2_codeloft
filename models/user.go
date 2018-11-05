@@ -57,8 +57,6 @@ func (user *User) AddUser(db *sql.DB) error {
 	return nil
 }
 
-
-
 func GetLeaders(db *sql.DB, page int, pageSize int) []User {
 	slice := make([]User, 0, pageSize)
 	rows, _ := db.Query(`select * from users order by -score limit $1 offset $2`, pageSize, (page-1)*pageSize)
@@ -78,7 +76,7 @@ func GetLeaders(db *sql.DB, page int, pageSize int) []User {
 	return slice
 }
 
-func (user *User) DeleteUser(db *sql.DB) (error) {
+func (user *User) DeleteUser(db *sql.DB) error {
 	u := &User{}
 	if !u.GetUserByLogin(db, user.Login) {
 		return UserDoesNotExist(user.Login)

@@ -332,7 +332,7 @@ func userDelete(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		w.Write(generateError(models.MyError{r.URL.Path, "user id != url id", fmt.Errorf("user_id = %d. url ud = %%d", s.User_id, id)}))
 		return
 	}
-  
+
 	// body, err := ioutil.ReadAll(r.Body)
 
 	// if err != nil {
