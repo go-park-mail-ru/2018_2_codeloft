@@ -14,7 +14,6 @@ import (
 	_ "github.com/lib/pq"
 )
 
-
 func panicMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		//fmt.Println("panicMiddleware", r.URL.Path)
@@ -37,10 +36,9 @@ func logMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-
 func main() {
 	db := &database.DB{}
-	if (len(os.Args) < 3){
+	if len(os.Args) < 3 {
 		fmt.Println("Usage ./2018_2_codeloft <username> <password>")
 		fmt.Println("Getting USERNAME and PASSWORD from env")
 		var exist bool
@@ -52,8 +50,7 @@ func main() {
 		if !exist {
 			log.Println("PASSWORD don't set")
 		}
-	} else
-	{
+	} else {
 		db.DB_USERNAME = os.Args[1]
 		db.DB_PASSWORD = os.Args[2]
 	}
@@ -62,7 +59,7 @@ func main() {
 	db.ConnectDataBase()
 	defer db.DataBase.Close()
 	var filepath string = "resources/initdb.sql"
-	if _,err := os.Stat(filepath); err == nil {
+	if _, err := os.Stat(filepath); err == nil {
 		db.Init(filepath)
 	} else {
 		log.Printf("file %s does not exist\n", filepath)
