@@ -1,46 +1,11 @@
 package handlers
 
-import "net/http"
+import (
+	"net/http"
+	"text/template"
+)
 
-var MainPage = func(w http.ResponseWriter, r *http.Request){
-	tmpl := `
-<h1>Backend API</h1>
-<h1>Codeloft</h1>
-
-<h2>/user</h2>
-<p style = "color : green;font-weight: 600">Method GET: LeaderBoard</p>
-<p><a style = "color : red;font-weight: 600">Take:</a> get params "page" and "page_size"</p>
-<p><a style = "color : blue; font-weight: 600">Return:</a> JSON with leaders</p>
-<br>
-<p style = "color : green;font-weight: 600">Method POST: Registration</p>
-<p><a style = "color : red;font-weight: 600">Take:</a> JSON with "login", "password", "email"</p>
-<p><a style = "color : blue; font-weight: 600">Return:</a> JSON with "user_id","login", "password", "email"</p>
-<br>
-<p style = "color : green;font-weight: 600">Method DELETE: delete user</p>
-<p><a style = "color : red;font-weight: 600">Take:</a> JSON with "login", "password"</p>
-<p><a style = "color : blue; font-weight: 600">Return:</a> nothing</p>
-<br>
-<p style = "color : green;font-weight: 600">Method PUT: update user</p>
-<p><a style = "color : red;font-weight: 600">Take:</a> JSON with "login", "password" and optional "email", "new_password", "score"</p>
-<p><a style = "color : blue; font-weight: 600">Return:</a> JSON with "user_id","login", "password", "email" of update user</p>
-<br>
-<h2>/user/id</h2>
-
-<p style = "color : green;font-weight: 600">Method GET: get user with id</p>
-<br>
-
-
-<h2>/session</h2>
-<p style = "color : green;font-weight: 600">Method GET: checkAuth with cookie</p>
-
-<br>
-<p style = "color : green;font-weight: 600">Method POST: login. set cookie</p>
-<p><a style = "color : red;font-weight: 600">Take:</a> JSON with "login", "password"</p>
-<br>
-<p style = "color : green;font-weight: 600">Method DELETE: logout,delete cookie</p>
-<p><a style = "color : red;font-weight: 600">Take:</a> JSON with "login", "password"</p>
-<p><a style = "color : blue; font-weight: 600">Return:</a> nothing
-</p>	
-`
-	w.Write([]byte(tmpl))
+var MainPage = func(w http.ResponseWriter, r *http.Request) {
+	tmpl := template.Must(template.ParseFiles("templates/mainpage.html"))
+	tmpl.Execute(w, struct{}{})
 }
