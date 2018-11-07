@@ -1,35 +1,29 @@
 package models
 
 import (
-	"encoding/json"
-	"github.com/gorilla/websocket"
+	"container/list"
+	"math/rand"
+	"time"
 )
+
+const width = 800
+const height = 600
 
 type Position struct {
 	X int `json:"x"`
 	Y int `json:"y"`
 }
 
-type PlayerData struct {
-	Username string `json:"username"`
-	HP       string
-	Position Position `json:"position"`
+func (p *Position) RandomPos() {
+	s1 := rand.NewSource(time.Now().UnixNano())
+	r1 := rand.New(s1)
+	p.X = r1.Intn(width)
+	p.Y = r1.Intn(height)
 }
 
 type Player struct {
-	ID   string
-	Room *Room
-	Conn *websocket.Conn
-	Data PlayerData
+	Username string   `json:"username"`
+	Position Position `json:"position"`
+	Tracer *list.List `json:"tracer"`
 }
 
-type IncomingMessage struct {
-	Type    string          `json:"type"`
-	Payload json.RawMessage `json:"payload"`
-	Player  *Player         `json:"-"`
-}
-
-type Message struct {
-	Type    string      `json:"type"`
-	Payload interface{} `json:"payload"`
-}
