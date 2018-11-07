@@ -18,7 +18,7 @@ type Command struct {
 }
 
 func NewRoom() *Room {
-	id := uuid.Must(uuid.NewV4()).String()
+	id := uuid.NewV4().String()
 	return &Room{
 		ID:          id,
 		MaxPlayers:  MAXPLAYERS,

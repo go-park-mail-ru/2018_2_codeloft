@@ -63,7 +63,7 @@ func (g *Game) FindRoom() *Room {
 }
 
 func (g *Game) ProcessConn(conn *websocket.Conn) {
-	id := uuid.Must(uuid.NewV4()).String()
+	id := uuid.NewV4().String()
 	var username string
 	err := conn.ReadJSON(&username)
 	if err != nil {
