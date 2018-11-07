@@ -82,6 +82,8 @@ func (r *Room) ListenToPlayers() {
 			delete(r.Players, p.ID)
 			if len(r.Players) == 0 {
 				r.Ticker.Stop()
+				game := GetGame()
+				delete(game.Rooms, r.ID)
 			}
 			log.Printf("player was deleted from room %s", r.ID)
 		}
