@@ -67,7 +67,7 @@ func (g *Game) ProcessConn(conn *websocket.Conn) {
 	var username string
 	err := conn.ReadJSON(&username)
 	if err != nil {
-		log.Println("error while reading json in processConn")
+		log.Println("error while reading json in processConn", err)
 		username = ""
 	}
 	p := &PlayerConn{

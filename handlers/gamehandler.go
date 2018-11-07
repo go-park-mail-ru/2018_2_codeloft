@@ -29,6 +29,7 @@ func (h *GameHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	//defer conn.Close()
 	ctx := r.Context()
 	login := ctx.Value("login")
+	log.Println("login from context:", login)
 	conn.WriteJSON(login)
 	game.Connect(conn)
 }
