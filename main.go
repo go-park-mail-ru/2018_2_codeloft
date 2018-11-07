@@ -1,9 +1,13 @@
 package main
 
 import (
+	"context"
+	"database/sql"
 	"fmt"
 	"github.com/go-park-mail-ru/2018_2_codeloft/database"
 	"github.com/go-park-mail-ru/2018_2_codeloft/handlers"
+	"github.com/go-park-mail-ru/2018_2_codeloft/models"
+	"github.com/go-park-mail-ru/2018_2_codeloft/services"
 	"log"
 	"net/http"
 	"os"
@@ -36,6 +40,27 @@ func logMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+func AuthMiddleWare(next http.Handler, db *sql.DB) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var s *models.Session
+		if s = services.GetCookie(r, db); s == nil {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		var user models.User
+		if !user.GetUserByID(db, s.User_id) {
+			w.WriteHeader(http.StatusUnauthorized)
+			log.Println("User Does Not Exist in Users table, but exist in session", s.Value, s.User_id)
+			return
+		}
+
+		ctx := r.Context()
+		ctx = context.WithValue(ctx, "login",user.Login)
+		next.ServeHTTP(w, r.WithContext(ctx))
+		//next.ServeHTTP(w,r)
+	})
+}
+
 func main() {
 	db := &database.DB{}
 	if len(os.Args) < 3 {
@@ -65,14 +90,17 @@ func main() {
 		log.Printf("file %s does not exist\n", filepath)
 	}
 
+	gameMux := http.NewServeMux()
+	gameMux.Handle("/gamews", &handlers.GameHandler{db.DataBase})
+	authHandler := AuthMiddleWare(gameMux, db.DataBase)
+
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/", handlers.MainPage)
 	mux.Handle("/user", &handlers.UserHandler{db.DataBase})
 	mux.Handle("/session", &handlers.SessionHandler{db.DataBase})
 	mux.Handle("/user/", &handlers.UserById{db.DataBase})
-
-	fmt.Println("starting server on http://127.0.0.1:8080")
+	mux.Handle("/gamews", authHandler)
 	c := cors.New(cors.Options{
 		AllowOriginFunc: func(origin string) bool {
 			return strings.Contains(origin, "codeloft") ||
@@ -93,5 +121,6 @@ func main() {
 		port = "8080"
 	}
 	addr := fmt.Sprintf(":%s", port)
+	fmt.Println("starting server on http://127.0.0.1:8080")
 	http.ListenAndServe(addr, panicMW)
 }
