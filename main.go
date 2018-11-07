@@ -17,9 +17,6 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/go-park-mail-ru/2018_2_codeloft/database"
-	"github.com/go-park-mail-ru/2018_2_codeloft/handlers"
-
 	"github.com/go-park-mail-ru/2018_2_codeloft/logger"
 	"github.com/rs/cors"
 
