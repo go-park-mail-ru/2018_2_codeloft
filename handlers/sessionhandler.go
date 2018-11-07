@@ -4,14 +4,15 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"github.com/go-park-mail-ru/2018_2_codeloft/models"
-	"github.com/go-park-mail-ru/2018_2_codeloft/services"
-	"github.com/go-park-mail-ru/2018_2_codeloft/validator"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"time"
+	"github.com/go-park-mail-ru/2018_2_codeloft/models"
+	"github.com/go-park-mail-ru/2018_2_codeloft/services"
+	"github.com/go-park-mail-ru/2018_2_codeloft/validator"
+	"go.uber.org/zap"
 )
 
 func checkAuth(w http.ResponseWriter, r *http.Request, db *sql.DB) {
@@ -35,12 +36,25 @@ func checkAuth(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	if !user.GetUserByID(db, s.User_id) {
 		w.WriteHeader(http.StatusUnauthorized)
 		w.Write(generateError(models.MyError{r.URL.Path, "User Does Not Exist in Users table, but exist in session", fmt.Errorf("")}))
-		log.Println("User Does Not Exist in Users table, but exist in session", s.Value, s.User_id)
+		zap.L().Info("User Does Not Exist in Users table, but exist in session",
+			zap.String("URL", r.URL.Path),
+			zap.String("Method", r.Method),
+			zap.String("Origin", r.Header.Get("Origin")),
+			zap.String("Remote addres", r.RemoteAddr),
+			zap.String("Session value", s.Value),
+			zap.Int64("User id", s.User_id),
+		)
 		return
 	}
 	res, err := json.Marshal(&user)
 	if err != nil {
-		log.Println("error while Marshaling in /user", err)
+		zap.L().Info("error while Marshaling in /user",
+			zap.String("URL", r.URL.Path),
+			zap.String("Method", r.Method),
+			zap.String("Origin", r.Header.Get("Origin")),
+			zap.String("Remote addres", r.RemoteAddr),
+			zap.Error(err),
+		)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -60,6 +74,15 @@ func signIn(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	defer r.Body.Close()
 	if err != nil {
 		log.Println("error while reading body in /session", err)
+
+		zap.L().Info("error while reading body in /session",
+			zap.String("URL", r.URL.Path),
+			zap.String("Method", r.Method),
+			zap.String("Origin", r.Header.Get("Origin")),
+			zap.String("Remote addres", r.RemoteAddr),
+			zap.Error(err),
+		)
+
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -71,23 +94,58 @@ func signIn(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write(generateError(models.MyError{r.URL.Path, "wrong requst format", err}))
+		zap.L().Info("error while Marshaling in /session",
+			zap.String("URL", r.URL.Path),
+			zap.String("Method", r.Method),
+			zap.String("Origin", r.Header.Get("Origin")),
+			zap.String("Remote addres", r.RemoteAddr),
+			zap.Error(err),
+		)
+
 		return
 	}
 	err = validator.ValidateLogin(u.Login)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write(generateError(models.MyError{r.URL.Path, "bad login", err}))
+		zap.L().Info("error while validating in /session",
+			zap.String("URL", r.URL.Path),
+			zap.String("Method", r.Method),
+			zap.String("Origin", r.Header.Get("Origin")),
+			zap.String("Remote addres", r.RemoteAddr),
+			zap.Error(err),
+		)
 		return
 	}
 	var dbUser models.User
 	if !dbUser.GetUserByLogin(db, u.Login) {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write(generateError(models.MyError{r.URL.Path, "User does not exist", models.UserDoesNotExist(u.Login)}))
+		err := models.MyError{r.URL.Path, "User does not exist", models.UserDoesNotExist(u.Login)}
+		w.Write(generateError(err))
+		zap.L().Info("User does not exist",
+			zap.String("URL", r.URL.Path),
+			zap.String("Method", r.Method),
+			zap.String("Origin", r.Header.Get("Origin")),
+			zap.String("Remote addres", r.RemoteAddr),
+			zap.Error(&err),
+		)
 		return
 	}
 	if dbUser.Password != u.Password {
 		w.WriteHeader(http.StatusBadRequest)
+
+		err := models.MyError{r.URL.Path, "wrong password", fmt.Errorf("wrong password")}
+		w.Write(generateError(err))
+		zap.L().Info("Wrong password",
+			zap.String("URL", r.URL.Path),
+			zap.String("Method", r.Method),
+			zap.String("Origin", r.Header.Get("Origin")),
+			zap.String("Remote addres", r.RemoteAddr),
+			zap.Error(&err),
+		)
+
 		w.Write(generateError(models.MyError{r.URL.Path, "wrong password", fmt.Errorf("wrong password")}))
+
 		return
 	}
 	// cookie := http.Cookie{
@@ -105,13 +163,31 @@ func signIn(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	err = s.AddCookie(db)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
+
+		myErr := models.MyError{r.URL.Path, "Cant AddCookie", err}
+		w.Write(generateError(myErr))
+		zap.L().Info("Cant AddCookie",
+			zap.String("URL", r.URL.Path),
+			zap.String("Method", r.Method),
+			zap.String("Origin", r.Header.Get("Origin")),
+			zap.String("Remote addres", r.RemoteAddr),
+			zap.Error(&myErr),
+		)
+
 		w.Write(generateError(models.MyError{r.URL.Path, "Cant AddCookie", err}))
+
 		return
 	}
 	http.SetCookie(w, cookie)
 	res, err := json.Marshal(&dbUser)
 	if err != nil {
-		log.Println("error while Marshaling in /session POST")
+		zap.L().Info("error while Marshaling",
+			zap.String("URL", r.URL.Path),
+			zap.String("Method", r.Method),
+			zap.String("Origin", r.Header.Get("Origin")),
+			zap.String("Remote addres", r.RemoteAddr),
+			zap.Error(err),
+		)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -133,13 +209,29 @@ func logout(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	// }
 	var s *models.Session
 	if s = services.GetCookie(r, db); s == nil {
+    zap.L().Info("StatusConflist",
+			zap.String("URL", r.URL.Path),
+			zap.String("Method", r.Method),
+			zap.String("Origin", r.Header.Get("Origin")),
+			zap.String("Remote addres", r.RemoteAddr),
+			zap.Int("Code", http.StatusConflict),
+		)
 		w.WriteHeader(http.StatusConflict)
 		return
 	}
 	cookie, _ := r.Cookie("session_id")
 	cookie.Expires = time.Now()
 	http.SetCookie(w, cookie)
-	s.DeleteCookie(db)
+	err := s.DeleteCookie(db)
+	if err != nil {
+		zap.L().Warn("Can not delete cookie",
+			zap.String("URL", r.URL.Path),
+			zap.String("Method", r.Method),
+			zap.String("Origin", r.Header.Get("Origin")),
+			zap.String("Remote addres", r.RemoteAddr),
+			zap.Error(err),
+		)
+	}
 	w.WriteHeader(http.StatusOK)
 }
 
