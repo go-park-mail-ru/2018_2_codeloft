@@ -32,6 +32,7 @@ func leaders(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	err := r.ParseForm()
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
+
 		myError := models.MyError{r.URL.Path, "error while parsing form", err}
 		w.Write(generateError(myError))
 		zap.L().Info("Parsing error in leaders",
@@ -41,6 +42,9 @@ func leaders(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 			zap.String("Remote addres", r.RemoteAddr),
 			zap.Error(&myError),
 		)
+
+		w.Write(generateError(models.MyError{r.URL.Path, "error while parsing form", err}))
+
 		return
 	}
 	var page int
@@ -56,6 +60,7 @@ func leaders(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 			if err != nil {
 				w.WriteHeader(http.StatusBadRequest)
 				w.Write(generateError(models.MyError{r.URL.Path, "Bad params", err}))
+
 				zap.L().Info("Bad params",
 					zap.String("URL", r.URL.Path),
 					zap.String("Method", r.Method),
@@ -63,6 +68,7 @@ func leaders(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 					zap.String("Remote addres", r.RemoteAddr),
 					zap.Error(err),
 				)
+
 				return -1, err
 			}
 		}
@@ -89,14 +95,14 @@ func leaders(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 }
 
 func signUp(w http.ResponseWriter, r *http.Request, db *sql.DB) {
-	s := &models.Session{}
-	if services.GetCookie(s, r, db) {
+	var s *models.Session
+	if s = services.GetCookie(r, db); s != nil {
 		w.WriteHeader(http.StatusConflict)
 		return
 	}
 
 	body, err := ioutil.ReadAll(r.Body)
-
+	defer r.Body.Close()
 	if err != nil {
 		zap.L().Info("error while reading body /user",
 			zap.String("URL", r.URL.Path),
@@ -117,6 +123,7 @@ func signUp(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write(generateError(models.MyError{r.URL.Path, "wrong request format", err}))
+
 		zap.L().Info("wrong request format",
 			zap.String("URL", r.URL.Path),
 			zap.String("Method", r.Method),
@@ -124,6 +131,7 @@ func signUp(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 			zap.String("Remote addres", r.RemoteAddr),
 			zap.Error(err),
 		)
+
 		return
 	}
 	var user models.User
@@ -136,6 +144,7 @@ func signUp(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write(generateError(models.MyError{r.URL.Path, "bad email", err}))
+
 		zap.L().Info("bad email",
 			zap.String("URL", r.URL.Path),
 			zap.String("Method", r.Method),
@@ -143,12 +152,14 @@ func signUp(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 			zap.String("Remote addres", r.RemoteAddr),
 			zap.Error(err),
 		)
+
 		return
 	}
 	err = validator.ValidateLogin(u.Login)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write(generateError(models.MyError{r.URL.Path, "bad login", err}))
+
 		zap.L().Info("bad login",
 			zap.String("URL", r.URL.Path),
 			zap.String("Method", r.Method),
@@ -156,12 +167,14 @@ func signUp(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 			zap.String("Remote addres", r.RemoteAddr),
 			zap.Error(err),
 		)
+
 		return
 	}
 	err = validator.ValidatePassword(u.Password)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write(generateError(models.MyError{r.URL.Path, "bad password", err}))
+
 		zap.L().Info("bad password",
 			zap.String("URL", r.URL.Path),
 			zap.String("Method", r.Method),
@@ -169,6 +182,7 @@ func signUp(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 			zap.String("Remote addres", r.RemoteAddr),
 			zap.Error(err),
 		)
+
 		return
 	}
 	user = models.User{Login: u.Login, Email: u.Email, Password: u.Password}
@@ -215,8 +229,9 @@ func updateUser(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	}
 
 	body, err := ioutil.ReadAll(r.Body)
-
+	defer r.Body.Close()
 	if err != nil {
+
 		zap.L().Info("error while reading body in /user",
 			zap.String("URL", r.URL.Path),
 			zap.String("Method", r.Method),
@@ -224,6 +239,7 @@ func updateUser(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 			zap.String("Remote addres", r.RemoteAddr),
 			zap.Error(err),
 		)
+
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -283,10 +299,10 @@ func updateUser(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		newScore = u.Score
 	}
 
-	newUser := models.User{user.Id, u.Login, newPassword, newEmail}
+
+	newUser := models.User{user.Id, u.Login, newPassword, newEmail, newScore}
 	err = newUser.UpdateUser(db)
-	if err != nil {
-		zap.L().Info("Can not update user",
+  zap.L().Info("Can not update user",
 			zap.String("URL", r.URL.Path),
 			zap.String("Method", r.Method),
 			zap.String("Origin", r.Header.Get("Origin")),
@@ -294,9 +310,8 @@ func updateUser(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 			zap.String("User", newUser.Login),
 			zap.Error(err),
 		)
-	}
-	game := models.Game{newScore, user.Id}
-	game.UpdateScore(db)
+	newUser.UpdateScore(db)
+
 	var result struct {
 		Id    int64  `json:"user_id"`
 		Login string `json:"login"`
@@ -306,7 +321,7 @@ func updateUser(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	result.Id = newUser.Id
 	result.Login = newUser.Login
 	result.Email = newUser.Email
-	result.Score = game.Score
+	result.Score = newUser.Score
 	w.WriteHeader(http.StatusOK)
 	res, err := json.Marshal(&result)
 	if err != nil {
@@ -425,13 +440,14 @@ func userDelete(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		w.Write(generateError(models.MyError{r.URL.Path, "Bad URL", err}))
 		return
 	}
-	var user models.User
+	user := &models.User{}
 	if !user.GetUserByID(db, id) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	s := &models.Session{}
-	if !services.GetCookie(s, r, db) {
+	var s *models.Session
+
+	if s = services.GetCookie(r, db); s == nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}

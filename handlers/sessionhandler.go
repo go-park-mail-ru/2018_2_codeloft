@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"os"
 	"time"
-
 	"github.com/go-park-mail-ru/2018_2_codeloft/models"
 	"github.com/go-park-mail-ru/2018_2_codeloft/services"
 	"github.com/go-park-mail-ru/2018_2_codeloft/validator"
@@ -17,8 +16,8 @@ import (
 )
 
 func checkAuth(w http.ResponseWriter, r *http.Request, db *sql.DB) {
-	s := &models.Session{}
-	if !services.GetCookie(s, r, db) {
+	var s *models.Session
+	if s = services.GetCookie(r, db); s == nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
@@ -65,15 +64,17 @@ func checkAuth(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 }
 
 func signIn(w http.ResponseWriter, r *http.Request, db *sql.DB) {
-	s := &models.Session{}
+	var s *models.Session
 	// Если уже залогинен
-	if services.GetCookie(s, r, db) {
+	if s = services.GetCookie(r, db); s != nil {
 		w.WriteHeader(http.StatusConflict)
 		return
 	}
 	body, err := ioutil.ReadAll(r.Body)
+	defer r.Body.Close()
 	if err != nil {
 		log.Println("error while reading body in /session", err)
+
 		zap.L().Info("error while reading body in /session",
 			zap.String("URL", r.URL.Path),
 			zap.String("Method", r.Method),
@@ -81,6 +82,7 @@ func signIn(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 			zap.String("Remote addres", r.RemoteAddr),
 			zap.Error(err),
 		)
+
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -99,6 +101,7 @@ func signIn(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 			zap.String("Remote addres", r.RemoteAddr),
 			zap.Error(err),
 		)
+
 		return
 	}
 	err = validator.ValidateLogin(u.Login)
@@ -130,6 +133,7 @@ func signIn(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	}
 	if dbUser.Password != u.Password {
 		w.WriteHeader(http.StatusBadRequest)
+
 		err := models.MyError{r.URL.Path, "wrong password", fmt.Errorf("wrong password")}
 		w.Write(generateError(err))
 		zap.L().Info("Wrong password",
@@ -139,6 +143,9 @@ func signIn(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 			zap.String("Remote addres", r.RemoteAddr),
 			zap.Error(&err),
 		)
+
+		w.Write(generateError(models.MyError{r.URL.Path, "wrong password", fmt.Errorf("wrong password")}))
+
 		return
 	}
 	// cookie := http.Cookie{
@@ -156,6 +163,7 @@ func signIn(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	err = s.AddCookie(db)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
+
 		myErr := models.MyError{r.URL.Path, "Cant AddCookie", err}
 		w.Write(generateError(myErr))
 		zap.L().Info("Cant AddCookie",
@@ -165,6 +173,9 @@ func signIn(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 			zap.String("Remote addres", r.RemoteAddr),
 			zap.Error(&myErr),
 		)
+
+		w.Write(generateError(models.MyError{r.URL.Path, "Cant AddCookie", err}))
+
 		return
 	}
 	http.SetCookie(w, cookie)
@@ -196,9 +207,9 @@ func logout(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	// 	w.WriteHeader(http.StatusUnauthorized)
 	// 	return
 	// }
-	s := &models.Session{}
-	if !services.GetCookie(s, r, db) {
-		zap.L().Info("StatusConflist",
+	var s *models.Session
+	if s = services.GetCookie(r, db); s == nil {
+    zap.L().Info("StatusConflist",
 			zap.String("URL", r.URL.Path),
 			zap.String("Method", r.Method),
 			zap.String("Origin", r.Header.Get("Origin")),
