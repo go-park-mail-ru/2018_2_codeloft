@@ -87,8 +87,8 @@ func leaders(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	if pageSize <= 0 {
 		pageSize = 5
 	}
-	slice := models.GetLeaders(db, page, pageSize)
-	resp, _ := json.Marshal(&slice)
+	lead := models.GetLeaders(db, page, pageSize)
+	resp, _ := json.Marshal(&lead)
 	w.WriteHeader(http.StatusOK)
 	w.Write(resp)
 	return
@@ -299,17 +299,16 @@ func updateUser(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		newScore = u.Score
 	}
 
-
 	newUser := models.User{user.Id, u.Login, newPassword, newEmail, newScore}
 	err = newUser.UpdateUser(db)
-  zap.L().Info("Can not update user",
-			zap.String("URL", r.URL.Path),
-			zap.String("Method", r.Method),
-			zap.String("Origin", r.Header.Get("Origin")),
-			zap.String("Remote addres", r.RemoteAddr),
-			zap.String("User", newUser.Login),
-			zap.Error(err),
-		)
+	zap.L().Info("Can not update user",
+		zap.String("URL", r.URL.Path),
+		zap.String("Method", r.Method),
+		zap.String("Origin", r.Header.Get("Origin")),
+		zap.String("Remote addres", r.RemoteAddr),
+		zap.String("User", newUser.Login),
+		zap.Error(err),
+	)
 	newUser.UpdateScore(db)
 
 	var result struct {
