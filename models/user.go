@@ -17,7 +17,7 @@ type User struct {
 
 type Leaders struct {
 	Users      []User `json:"users"`
-	UsersCount int64  `json:"usersCount"`
+	PagesCount int64  `json:"pagesCount"`
 }
 
 func (user *User) GetUserByID(db *sql.DB, id int64) bool {
@@ -108,7 +108,7 @@ func GetLeaders(db *sql.DB, page int, pageSize int) Leaders {
 	if err != nil {
 		zap.S().Infow("Leaders error", "error", err)
 	}
-	return Leaders{Users: slice, UsersCount: usersCount}
+	return Leaders{Users: slice, PagesCount: int64((int(usersCount) + pageSize - 1) / pageSize)}
 }
 
 func (user *User) DeleteUser(db *sql.DB) error {
