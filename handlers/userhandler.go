@@ -482,3 +482,64 @@ func (h *UserById) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 	}
 }
+
+type UserLang struct {
+	Db *sql.DB
+}
+
+func userUpdateLang(w http.ResponseWriter, r *http.Request, db *sql.DB) {
+	var session *models.Session
+	if session = services.GetCookie(r, db); session == nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	var u struct {
+		Id   int64  `json:"user_id"`
+		Lang string `json:"lang"`
+	}
+
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		zap.S().Infow("Error in lang update", "err", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	err = json.Unmarshal(body, &u)
+	if err != nil {
+		zap.S().Infow("Error in lang update", "err", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	if u.Id != session.User_id {
+		w.WriteHeader(http.StatusConflict)
+		w.Write(generateError(models.MyError{r.URL.Path, "user id != url id", fmt.Errorf("user_id = %d. url ud = %%d", session.User_id, u.Id)}))
+		return
+	}
+
+	user := models.User{}
+	if !user.GetUserByID(db, u.Id) {
+		w.WriteHeader(http.StatusBadRequest)
+	}
+	user.Lang = u.Lang
+
+	err = user.UpdateLang(db)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		zap.S().Infow("Error in lang update", "err", err)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	body, err = json.Marshal(user)
+	w.Write(body)
+}
+
+func (h *UserLang) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("content-type", "application/json")
+	switch r.Method {
+	case http.MethodPost:
+		userUpdateLang(w, r, h.Db)
+	}
+}

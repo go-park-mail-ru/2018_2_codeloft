@@ -1,10 +1,10 @@
 package main
 
 import (
-
 	"context"
 	"database/sql"
 	"fmt"
+
 	"github.com/go-park-mail-ru/2018_2_codeloft/database"
 	"github.com/go-park-mail-ru/2018_2_codeloft/handlers"
 	"github.com/go-park-mail-ru/2018_2_codeloft/models"
@@ -53,7 +53,6 @@ func logMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-
 func AuthMiddleWare(next http.Handler, db *sql.DB) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var s *models.Session
@@ -69,12 +68,11 @@ func AuthMiddleWare(next http.Handler, db *sql.DB) http.Handler {
 		}
 
 		ctx := r.Context()
-		ctx = context.WithValue(ctx, "login",user.Login)
+		ctx = context.WithValue(ctx, "login", user.Login)
 		next.ServeHTTP(w, r.WithContext(ctx))
 		//next.ServeHTTP(w,r)
 	})
 }
-
 
 func main() {
 	zapLogger, err := logger.InitLogger()
@@ -121,6 +119,7 @@ func main() {
 	mux.Handle("/user", &handlers.UserHandler{db.DataBase})
 	mux.Handle("/session", &handlers.SessionHandler{db.DataBase})
 	mux.Handle("/user/", &handlers.UserById{db.DataBase})
+	mux.Handle("/user/updateLang", &handlers.UserLang{db.DataBase})
 	mux.Handle("/gamews", authHandler)
 	c := cors.New(cors.Options{
 		AllowOriginFunc: func(origin string) bool {
