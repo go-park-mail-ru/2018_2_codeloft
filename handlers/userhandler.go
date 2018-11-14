@@ -299,17 +299,16 @@ func updateUser(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		newScore = u.Score
 	}
 
-
-	newUser := models.User{user.Id, u.Login, newPassword, newEmail, newScore}
+	newUser := models.User{user.Id, u.Login, newPassword, newEmail, newScore, user.Lang}
 	err = newUser.UpdateUser(db)
-  zap.L().Info("Can not update user",
-			zap.String("URL", r.URL.Path),
-			zap.String("Method", r.Method),
-			zap.String("Origin", r.Header.Get("Origin")),
-			zap.String("Remote addres", r.RemoteAddr),
-			zap.String("User", newUser.Login),
-			zap.Error(err),
-		)
+	zap.L().Info("Can not update user",
+		zap.String("URL", r.URL.Path),
+		zap.String("Method", r.Method),
+		zap.String("Origin", r.Header.Get("Origin")),
+		zap.String("Remote addres", r.RemoteAddr),
+		zap.String("User", newUser.Login),
+		zap.Error(err),
+	)
 	newUser.UpdateScore(db)
 
 	var result struct {
@@ -457,34 +456,6 @@ func userDelete(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		return
 	}
 
-	// body, err := ioutil.ReadAll(r.Body)
-
-	// if err != nil {
-	// 	log.Println("error while reading body in /user")
-	// 	w.WriteHeader(http.StatusInternalServerError)
-	// 	return
-	// }
-	// var u struct {
-	// 	Login    string `json:"login"`
-	// 	Password string `json:"password"`
-	// }
-	// err = json.Unmarshal(body, &u)
-	// if err != nil {
-	// 	w.WriteHeader(http.StatusBadRequest)
-	// 	w.Write(generateError(models.MyError{r.URL.Path,"wrong request format",err}))
-	// 	return
-	// }
-	// err = validator.ValidateLogin(u.Login)
-	// if err != nil {
-	// 	w.WriteHeader(http.StatusBadRequest)
-	// 	w.Write(generateError(models.MyError{r.URL.Path,"bad login",err}))
-	// 	return
-	// }
-	// var user models.User
-	// if !user.GetUserByLogin(db, u.Login) {
-	// 	w.Write(generateError(models.MyError{r.URL.Path,"User does not exist",models.UserDoesNotExist(u.Login)}))
-	// 	return
-	// }
 	err = user.DeleteUser(db)
 	if err != nil {
 		zap.L().Warn("Can not delete user",

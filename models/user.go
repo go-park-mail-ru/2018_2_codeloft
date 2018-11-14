@@ -3,6 +3,8 @@ package models
 import (
 	"database/sql"
 	"log"
+
+	"go.uber.org/zap"
 )
 
 type User struct {
@@ -11,6 +13,7 @@ type User struct {
 	Password string `json:"-"`
 	Email    string `json:"email"`
 	Score    int64  `json:"score"`
+	Lang     string `json:"lang"`
 }
 
 func (user *User) GetUserByID(db *sql.DB, id int64) bool {
@@ -62,7 +65,6 @@ func (user *User) AddUser(db *sql.DB) error {
 	return nil
 }
 
-
 func GetLeaders(db *sql.DB, page int, pageSize int) []User {
 	slice := make([]User, 0, pageSize)
 	rows, _ := db.Query(`select * from users order by -score limit $1 offset $2`, pageSize, (page-1)*pageSize)
@@ -74,9 +76,10 @@ func GetLeaders(db *sql.DB, page int, pageSize int) []User {
 			var password string
 			var email string
 			var score int64
+			var lang string
 
-			rows.Scan(&id, &login, &password, &email, &score)
-			user := User{id, login, password, email, score}
+			rows.Scan(&id, &login, &password, &email, &score, &lang)
+			user := User{id, login, password, email, score, lang}
 
 			slice = append(slice, user)
 		}
@@ -114,7 +117,6 @@ func (user *User) UpdateUser(db *sql.DB) error {
 	return nil
 }
 
-
 func (user *User) UpdateScore(db *sql.DB) error {
 	_, err := db.Exec("update users set score=$1 where id = $2", user.Score, user.Id)
 	if err != nil {
@@ -124,3 +126,11 @@ func (user *User) UpdateScore(db *sql.DB) error {
 	return nil
 }
 
+func (user *User) UpdateLang(db *sql.DB) error {
+	_, err := db.Exec("update users set lang=$1 where id = $2;", user.Lang, user.Id)
+	if err != nil {
+		zap.S().Infow("Can not update lang", "err", err)
+		return err
+	}
+	return nil
+}
