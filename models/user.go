@@ -62,7 +62,6 @@ func (user *User) AddUser(db *sql.DB) error {
 	return nil
 }
 
-
 func GetLeaders(db *sql.DB, page int, pageSize int) []User {
 	slice := make([]User, 0, pageSize)
 	rows, _ := db.Query(`select * from users order by -score limit $1 offset $2`, pageSize, (page-1)*pageSize)
@@ -114,7 +113,6 @@ func (user *User) UpdateUser(db *sql.DB) error {
 	return nil
 }
 
-
 func (user *User) UpdateScore(db *sql.DB) error {
 	_, err := db.Exec("update users set score=$1 where id = $2", user.Score, user.Id)
 	if err != nil {
@@ -123,4 +121,3 @@ func (user *User) UpdateScore(db *sql.DB) error {
 	}
 	return nil
 }
-

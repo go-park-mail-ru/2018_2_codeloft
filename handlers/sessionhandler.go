@@ -4,15 +4,15 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"github.com/go-park-mail-ru/2018_2_codeloft/models"
+	"github.com/go-park-mail-ru/2018_2_codeloft/services"
+	"github.com/go-park-mail-ru/2018_2_codeloft/validator"
+	"go.uber.org/zap"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"time"
-	"github.com/go-park-mail-ru/2018_2_codeloft/models"
-	"github.com/go-park-mail-ru/2018_2_codeloft/services"
-	"github.com/go-park-mail-ru/2018_2_codeloft/validator"
-	"go.uber.org/zap"
 )
 
 func checkAuth(w http.ResponseWriter, r *http.Request, db *sql.DB) {
@@ -209,7 +209,7 @@ func logout(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	// }
 	var s *models.Session
 	if s = services.GetCookie(r, db); s == nil {
-    zap.L().Info("StatusConflist",
+		zap.L().Info("StatusConflist",
 			zap.String("URL", r.URL.Path),
 			zap.String("Method", r.Method),
 			zap.String("Origin", r.Header.Get("Origin")),
