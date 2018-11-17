@@ -17,6 +17,7 @@ var (
 	errorShort         = errors.New("Too short")
 	errorInvalidChar   = errors.New("Invalid characters")
 	errorInvalidFormat = errors.New("Invalid format")
+	errorInvalidLang   = errors.New("Invalid language")
 )
 
 func ValidateEmail(in string) error {
@@ -51,6 +52,14 @@ func ValidateLogin(in string) error {
 	re := regexp.MustCompile(`^[a-zA-Z0-9_.]+$`)
 	if !re.Match([]byte(in)) {
 		return errorInvalidChar
+	}
+
+	return nil
+}
+
+func ValidateLang(in string) error {
+	if in != "ru" && in != "en" {
+		return errorInvalidLang
 	}
 
 	return nil

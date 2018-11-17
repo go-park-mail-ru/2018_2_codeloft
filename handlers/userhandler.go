@@ -489,13 +489,13 @@ type UserLang struct {
 
 func userUpdateLang(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	var session *models.Session
+	log.Println(r)
 	if session = services.GetCookie(r, db); session == nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 
-	var u struct {
-		Id   int64  `json:"user_id"`
+	var lang struct {
 		Lang string `json:"lang"`
 	}
 
@@ -506,24 +506,26 @@ func userUpdateLang(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		return
 	}
 
-	err = json.Unmarshal(body, &u)
+	err = json.Unmarshal(body, &lang)
 	if err != nil {
 		zap.S().Infow("Error in lang update", "err", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	if u.Id != session.User_id {
-		w.WriteHeader(http.StatusConflict)
-		w.Write(generateError(models.MyError{r.URL.Path, "user id != url id", fmt.Errorf("user_id = %d. url ud = %%d", session.User_id, u.Id)}))
+	user := models.User{}
+	if !user.GetUserByID(db, session.User_id) {
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	user := models.User{}
-	if !user.GetUserByID(db, u.Id) {
+	err = validator.ValidateLang(lang.Lang)
+	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
+		zap.S().Infow("Incorrect language", "lang", lang.Lang)
+		return
 	}
-	user.Lang = u.Lang
+	user.Lang = lang.Lang
 
 	err = user.UpdateLang(db)
 	if err != nil {
