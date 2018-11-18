@@ -1,8 +1,11 @@
 package models
 
-import "sync"
+import (
+	"sync"
+)
 
 type Cell struct {
-	Val int
-	sync.Mutex
+	Val int `json:"id"`
+	Mu sync.Mutex `json:"-"`
 }
+

@@ -77,7 +77,8 @@ func (g *Game) ProcessConn(conn *websocket.Conn, nickname string) {
 	if r == nil {
 		return
 	}
-	p.ID = len(r.Players) + 1
+	p.ID = r.LastId
+	r.LastId++
 	r.Players[p.ID] = p
 	p.Room = r
 	log.Printf("player %s joined room %s", p.Player.Username, r.ID)

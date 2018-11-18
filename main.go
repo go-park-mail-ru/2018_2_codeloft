@@ -111,7 +111,6 @@ func main() {
 	gameMux := http.NewServeMux()
 	gameMux.Handle("/gamews", &handlers.GameHandler{db.DataBase})
 	authHandler := AuthMiddleWare(gameMux, db.DataBase)
-
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/", handlers.MainPage)

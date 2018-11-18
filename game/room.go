@@ -11,15 +11,21 @@ import (
 )
 
 const (
+	SIGNAL_CONNECT = "connect"
+	SIGNAL_DEAD = "dead"
+	NO_SIGNAL = "None"
+)
+
+const (
 	MAXPLAYERS = 10
 )
 
 func NewRoom() *Room {
 	id := uuid.NewV4().String()
-	field := [gamemodels.FIELD_HEIGHT][gamemodels.FIELD_WIDTH]*gamemodels.Cell{}
+	field := [gamemodels.FIELD_HEIGHT][gamemodels.FIELD_WIDTH]gamemodels.Cell{}
 	for i := 0; i < gamemodels.FIELD_HEIGHT; i++ {
 		for j := 0; j < gamemodels.FIELD_WIDTH; j++ {
-			field[i][j] = &gamemodels.Cell{Val: 0}
+			field[i][j] = gamemodels.Cell{Val: 0}
 		}
 	}
 	//fmt.Println(field)
@@ -33,6 +39,7 @@ func NewRoom() *Room {
 		Message:     make(chan *IncomingMessage),
 		Ticker:      time.NewTicker(time.Millisecond * 200),
 		Field:       field,
+		LastId: 1,
 	}
 }
 
@@ -45,7 +52,8 @@ type Room struct {
 	Disconnects chan *PlayerConn
 	Message     chan *IncomingMessage
 	Broadcast   chan *OutMessage
-	Field       [gamemodels.FIELD_HEIGHT][gamemodels.FIELD_WIDTH]*gamemodels.Cell
+	Field       [gamemodels.FIELD_HEIGHT][gamemodels.FIELD_WIDTH]gamemodels.Cell
+	LastId int
 }
 
 type PlayerConn struct {
@@ -80,13 +88,23 @@ func (r *Room) ListenToPlayers() {
 
 			switch m.Type {
 			case "connect_player":
+				m.PlayerCon.Signal = SIGNAL_CONNECT
 				player := m.PlayerCon.Player
+				player.IsDead = 0
+				player.Score = 0
 				player.Position.RandomPos()
 				m.PlayerCon.Player.Tracer = make([]gamemodels.Position, 0, 20)
-				player.Tracer = append(player.Tracer, player.Position)
-				r.Field[player.Position.Y][player.Position.X].Lock()
-				r.Field[player.Position.Y][player.Position.X].Val = m.PlayerCon.ID
-				r.Field[player.Position.Y][player.Position.X].Unlock()
+				//r.Field[player.Position.Y][player.Position.X].Mu.Lock()
+				for {
+					if r.Field[player.Position.Y][player.Position.X].Val == 0 {
+						r.Field[player.Position.Y][player.Position.X].Val = m.PlayerCon.ID
+						player.Tracer = append(player.Tracer, player.Position)
+						break
+					}
+					player.Position.RandomPos()
+				}
+				//r.Field[player.Position.Y][player.Position.X].Val = m.PlayerCon.ID
+				//r.Field[player.Position.Y][player.Position.X].Mu.Unlock()
 				player.MoveDirection = "RIGHT"
 			case "change_direction":
 				direction := ""
@@ -96,11 +114,15 @@ func (r *Room) ListenToPlayers() {
 			}
 
 		case p := <-r.Disconnects:
+			for _, pos := range p.Player.Tracer {
+				r.Field[pos.Y][pos.X].Val = 0
+			}
 			delete(r.Players, p.ID)
 			if len(r.Players) == 0 {
 				r.Ticker.Stop()
 				game := GetGame()
 				delete(game.Rooms, r.ID)
+				log.Printf("Room %s was deleted", r.ID)
 			}
 			log.Printf("player was deleted from room %s", r.ID)
 		}
@@ -112,14 +134,14 @@ func (r *Room) Run() {
 
 	go r.RunBroadcast()
 
-	players := make([]gamemodels.Player, 0, len(r.Players))
-	for _, p := range r.Players {
-		players = append(players, *p.Player)
-	}
-	state := &State{
-		Players: players,
-	}
-	r.Broadcast <- &OutMessage{Type: "SIGNAL_NEW_GAME_STATE", Payload: state}
+	//players := make([]gamemodels.Player, 0, len(r.Players))
+	//for _, p := range r.Players {
+	//	players = append(players, *p.Player)
+	//}
+	//state := &State{
+	//	Players: players,
+	//}
+	//r.Broadcast <- &OutMessage{Type: "SIGNAL_NEW_GAME_STATE", Payload: state}
 	for {
 		<-r.Ticker.C
 		log.Printf("room %s tick with %d players", r.ID, len(r.Players))
@@ -141,13 +163,16 @@ func (r *Room) Run() {
 func (r *Room) MovePlayers() {
 	for _, p := range r.Players {
 		p.Player.Move()
-		r.Field[p.Player.Position.Y][p.Player.Position.X].Lock()
+		//r.Field[p.Player.Position.Y][p.Player.Position.X].Mu.Lock()
 		if r.Field[p.Player.Position.Y][p.Player.Position.X].Val == 0 {
 			r.Field[p.Player.Position.Y][p.Player.Position.X].Val = p.ID
 		} else {
-			p.Signal = "DEAD"
+			p.Player.IsDead = p.ID
+			for _, pos := range p.Player.Tracer {
+				r.Field[pos.Y][pos.X].Val = 0
+			}
 		}
-		r.Field[p.Player.Position.Y][p.Player.Position.X].Unlock()
+		//r.Field[p.Player.Position.Y][p.Player.Position.X].Mu.Unlock()
 	}
 }
 
@@ -155,11 +180,17 @@ func (r *Room) RunBroadcast() {
 	for {
 		m := <-r.Broadcast
 		for _, p := range r.Players {
-			if p.Signal != "DEAD" {
-				p.Send(m)
-			} else {
-				p.Send(&OutMessage{"DEAD", p.Player.Score})
+			if p.Signal == SIGNAL_CONNECT {
+				log.Println(r.Field)
+				p.Send(&OutMessage{"connected",r.Field})
+
 			}
+			if p.Player.IsDead != 0 {
+				p.Send(&OutMessage{"DEAD", p.Player.Score})
+			} else {
+				p.Send(m)
+			}
+			p.Signal = NO_SIGNAL
 		}
 	}
 }
@@ -176,7 +207,7 @@ func (p *PlayerConn) Listen() {
 
 	initMessage := &IncomingMessage{"connect_player", json.RawMessage{}, p}
 	p.Room.Message <- initMessage
-	p.Conn.WriteJSON(p.Room.Field) // send matrix
+	// p.Conn.WriteJSON(p.Room.Field) // send matrix
 	for {
 
 		m := &IncomingMessage{}
