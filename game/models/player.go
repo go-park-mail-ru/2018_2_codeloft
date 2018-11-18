@@ -9,10 +9,10 @@ import (
 //const height = 180
 
 const (
-	scale         = 20
+	scale         = 10
 	FIELD_WIDTH   = 16 * scale
 	FIELD_HEIGHT  = 9 * scale
-	DEFAULT_SPEED = 1 * scale / 2
+	DEFAULT_SPEED = 1 * scale/5
 )
 
 type Position struct {
