@@ -8,6 +8,7 @@ import (
 	"github.com/satori/go.uuid"
 	"log"
 	"time"
+	"unsafe"
 )
 
 const (
@@ -110,7 +111,7 @@ func (r *Room) ListenToPlayers() {
 				direction := ""
 				json.Unmarshal(m.Payload, &direction)
 				m.PlayerCon.Player.ChangeDirection(direction)
-				fmt.Printf("Player %s, change direction to %v\n", m.PlayerCon.Player.Username, m.PlayerCon.Player.MoveDirection)
+				//fmt.Printf("Player %s, change direction to %v\n", m.PlayerCon.Player.Username, m.PlayerCon.Player.MoveDirection)
 			}
 
 		case p := <-r.Disconnects:
@@ -145,7 +146,7 @@ func (r *Room) Run() {
 	for {
 		<-r.Ticker.C
 		log.Printf("room %s tick with %d players", r.ID, len(r.Players))
-		r.MovePlayers()
+
 		players := make([]gamemodels.Player, 0, len(r.Players))
 		for _, p := range r.Players {
 			players = append(players, *p.Player)
@@ -157,6 +158,7 @@ func (r *Room) Run() {
 
 		r.Broadcast <- &OutMessage{Type: "IN_GAME", Payload: state}
 		//fmt.Println(r.Field)
+		r.MovePlayers()
 	}
 }
 
@@ -191,7 +193,7 @@ func (r *Room) RunBroadcast() {
 		m := <-r.Broadcast
 		for _, p := range r.Players {
 			if p.Signal == SIGNAL_CONNECT {
-				log.Println(r.Field)
+				//log.Println(r.Field)
 				p.Send(&OutMessage{"connected", r.Field})
 
 			}
@@ -206,6 +208,8 @@ func (r *Room) RunBroadcast() {
 }
 
 func (p *PlayerConn) Send(s *OutMessage) {
+	d, _ := json.Marshal(s)
+	fmt.Println(unsafe.Sizeof(d))
 	err := p.Conn.WriteJSON(s)
 	if err != nil {
 		log.Printf("cannot send state to client: %s", err)
