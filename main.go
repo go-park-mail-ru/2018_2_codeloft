@@ -1,7 +1,6 @@
 package main
 
 import (
-
 	"context"
 	"database/sql"
 	"fmt"
@@ -53,7 +52,6 @@ func logMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-
 func AuthMiddleWare(next http.Handler, db *sql.DB) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var s *models.Session
@@ -69,12 +67,11 @@ func AuthMiddleWare(next http.Handler, db *sql.DB) http.Handler {
 		}
 
 		ctx := r.Context()
-		ctx = context.WithValue(ctx, "login",user.Login)
+		ctx = context.WithValue(ctx, "login", user.Login)
 		next.ServeHTTP(w, r.WithContext(ctx))
 		//next.ServeHTTP(w,r)
 	})
 }
-
 
 func main() {
 	zapLogger, err := logger.InitLogger()
@@ -114,7 +111,6 @@ func main() {
 	gameMux := http.NewServeMux()
 	gameMux.Handle("/gamews", &handlers.GameHandler{db.DataBase})
 	authHandler := AuthMiddleWare(gameMux, db.DataBase)
-
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/", handlers.MainPage)

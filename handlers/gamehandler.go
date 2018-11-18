@@ -31,5 +31,5 @@ func (h *GameHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	login := ctx.Value("login")
 	log.Println("login from context:", login)
 	conn.WriteJSON(login)
-	game.Connect(conn)
+	game.Connect(conn, login.(string))
 }
