@@ -1,10 +1,10 @@
 package game
 
 import (
-	gamemodels "github.com/go-park-mail-ru/2018_2_codeloft/game/models"
 	"github.com/gorilla/websocket"
 	"log"
 	"sync"
+	gamemodels "github.com/go-park-mail-ru/2018_2_codeloft/game/models"
 )
 
 const MAXROOMS = 5
@@ -17,7 +17,8 @@ func GetGame() *Game {
 		globalGame = &Game{
 			Rooms:       make(map[string]*Room),
 			MaxRooms:    MAXROOMS,
-			Connections: make(chan *connectInfo),
+			//Connections: make(chan *connectInfo),
+			Connections: make(chan *websocket.Conn),
 		}
 	})
 	return globalGame
@@ -31,18 +32,23 @@ type connectInfo struct {
 type Game struct {
 	Rooms       map[string]*Room
 	MaxRooms    int
-	Connections chan *connectInfo
+	//Connections chan *connectInfo
+	Connections chan *websocket.Conn
 }
 
-func Connect(conn *websocket.Conn, nickname string) {
-	globalGame.Connections <- &connectInfo{conn, nickname}
+//func Connect(conn *websocket.Conn, nickname string) {
+//	globalGame.Connections <- &connectInfo{conn, nickname}
+//}
+func Connect(conn *websocket.Conn) {
+	globalGame.Connections <- conn
 }
 
 func (g *Game) Run() {
 	for {
 		conn := <-g.Connections
 		log.Printf("got new connection")
-		g.ProcessConn(conn.ws, conn.nickname)
+		//g.ProcessConn(conn.ws, conn.nickname)
+		g.ProcessConn(conn)
 	}
 }
 
@@ -66,12 +72,19 @@ func (g *Game) FindRoom() *Room {
 	return r
 }
 
-func (g *Game) ProcessConn(conn *websocket.Conn, nickname string) {
+//func (g *Game) ProcessConn(conn *websocket.Conn, nickname string) {
+func (g *Game) ProcessConn(conn *websocket.Conn) {
 	//id := uuid.NewV4().String()
+	var nickname string
+	err := conn.ReadJSON(&nickname)
+	if err != nil {
+		log.Println(err)
+	}
 	p := &PlayerConn{
 		Conn: conn,
 		//ID:   id,
 		Player: &gamemodels.Player{Username: nickname, Speed: gamemodels.DEFAULT_SPEED},
+		//Player: &gamemodels.Player{Speed: gamemodels.DEFAULT_SPEED},
 	}
 	r := g.FindRoom()
 	if r == nil {

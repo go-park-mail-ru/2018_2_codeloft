@@ -108,16 +108,17 @@ func main() {
 		zap.S().Warn("file does not exist\n", filepath)
 	}
 
-	gameMux := http.NewServeMux()
-	gameMux.Handle("/gamews", &handlers.GameHandler{db.DataBase})
-	authHandler := AuthMiddleWare(gameMux, db.DataBase)
+	//gameMux := http.NewServeMux()
+	//gameMux.Handle("/gamews", &handlers.GameHandler{db.DataBase})
+	//authHandler := AuthMiddleWare(gameMux, db.DataBase)
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/", handlers.MainPage)
 	mux.Handle("/user", &handlers.UserHandler{db.DataBase})
 	mux.Handle("/session", &handlers.SessionHandler{db.DataBase})
 	mux.Handle("/user/", &handlers.UserById{db.DataBase})
-	mux.Handle("/gamews", authHandler)
+	//mux.Handle("/gamews", authHandler)
+	mux.Handle("/gamews", &handlers.GameHandler{db.DataBase})
 	c := cors.New(cors.Options{
 		AllowOriginFunc: func(origin string) bool {
 			return strings.Contains(origin, "codeloft") ||
