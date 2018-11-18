@@ -12,7 +12,7 @@ const (
 	scale         = 10
 	FIELD_WIDTH   = 16 * scale
 	FIELD_HEIGHT  = 9 * scale
-	DEFAULT_SPEED = 1 * scale/5
+	DEFAULT_SPEED = 1 * scale / 10
 )
 
 type Position struct {
@@ -25,7 +25,7 @@ type Position struct {
 //	Y int
 //}
 
-var Directions = map[string]Position{"BOTTOM": {0, 1}, "TOP": {0, -1}, "RIGHT": {1, 0}, "LEFT": {-1, 0}}
+var Directions = map[string]Position{"DOWN": {0, 1}, "UP": {0, -1}, "RIGHT": {1, 0}, "LEFT": {-1, 0}}
 
 func (p *Position) RandomPos() {
 	s1 := rand.NewSource(time.Now().UnixNano())
@@ -41,7 +41,8 @@ type Player struct {
 	Speed         int        `json:"speed"`
 	MoveDirection string     `json:"move_direction"`
 	Score         int        `json:"score"`
-	IsDead        int        `json:"is_dead,omitempty"`
+	ID            int        `json:"id"`
+	IsDead        bool       `json:"is_dead, omitempty"`
 }
 
 func (p *Player) ChangeDirection(direction string) {

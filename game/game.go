@@ -1,10 +1,10 @@
 package game
 
 import (
+	gamemodels "github.com/go-park-mail-ru/2018_2_codeloft/game/models"
 	"github.com/gorilla/websocket"
 	"log"
 	"sync"
-	gamemodels "github.com/go-park-mail-ru/2018_2_codeloft/game/models"
 )
 
 const MAXROOMS = 5
@@ -15,8 +15,8 @@ var once sync.Once
 func GetGame() *Game {
 	once.Do(func() {
 		globalGame = &Game{
-			Rooms:       make(map[string]*Room),
-			MaxRooms:    MAXROOMS,
+			Rooms:    make(map[string]*Room),
+			MaxRooms: MAXROOMS,
 			//Connections: make(chan *connectInfo),
 			Connections: make(chan *websocket.Conn),
 		}
@@ -30,8 +30,8 @@ type connectInfo struct {
 }
 
 type Game struct {
-	Rooms       map[string]*Room
-	MaxRooms    int
+	Rooms    map[string]*Room
+	MaxRooms int
 	//Connections chan *connectInfo
 	Connections chan *websocket.Conn
 }
@@ -91,6 +91,7 @@ func (g *Game) ProcessConn(conn *websocket.Conn) {
 		return
 	}
 	p.ID = r.LastId
+	p.Player.ID = r.LastId
 	r.LastId++
 	r.Players[p.ID] = p
 	p.Room = r

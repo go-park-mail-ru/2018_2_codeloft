@@ -37,7 +37,7 @@ func NewRoom() *Room {
 		Disconnects: make(chan *PlayerConn),
 		Broadcast:   make(chan *OutMessage),
 		Message:     make(chan *IncomingMessage),
-		Ticker:      time.NewTicker(time.Millisecond * 200),
+		Ticker:      time.NewTicker(time.Millisecond * 100),
 		Field:       field,
 		LastId:      1,
 	}
@@ -84,20 +84,20 @@ func (r *Room) ListenToPlayers() {
 	for {
 		select {
 		case m := <-r.Message:
-			log.Printf("message from player %d: %v", m.PlayerCon.ID, string(m.Payload))
+			log.Printf("message from player %s: %v", m.PlayerCon.Player.Username, string(m.Payload))
 
 			switch m.Type {
 			case "connect_player":
 				m.PlayerCon.Signal = SIGNAL_CONNECT
 				player := m.PlayerCon.Player
-				player.IsDead = 0
+				player.IsDead = false
 				player.Score = 0
 				player.Position.RandomPos()
 				m.PlayerCon.Player.Tracer = make([]gamemodels.Position, 0, 20)
 				//r.Field[player.Position.Y][player.Position.X].Mu.Lock()
 				for {
 					if r.Field[player.Position.Y][player.Position.X].Val == 0 {
-						r.Field[player.Position.Y][player.Position.X].Val = m.PlayerCon.ID
+						r.Field[player.Position.Y][player.Position.X].Val = m.PlayerCon.Player.ID
 						player.Tracer = append(player.Tracer, player.Position)
 						break
 					}
@@ -110,7 +110,7 @@ func (r *Room) ListenToPlayers() {
 				direction := ""
 				json.Unmarshal(m.Payload, &direction)
 				m.PlayerCon.Player.ChangeDirection(direction)
-				fmt.Printf("Player %d, change direction to %v\n", m.PlayerCon.ID, m.PlayerCon.Player.MoveDirection)
+				fmt.Printf("Player %s, change direction to %v\n", m.PlayerCon.Player.Username, m.PlayerCon.Player.MoveDirection)
 			}
 
 		case p := <-r.Disconnects:
@@ -163,6 +163,9 @@ func (r *Room) Run() {
 func (r *Room) MovePlayers() {
 	for _, p := range r.Players {
 		startpos := p.Player.Position
+		if p.Player.IsDead == true {
+			continue
+		}
 		p.Player.Move()
 		for startpos.Y < p.Player.Position.Y && startpos.X < p.Player.Position.X {
 			startpos.Y += gamemodels.Directions[p.Player.MoveDirection].Y
@@ -171,12 +174,13 @@ func (r *Room) MovePlayers() {
 		}
 		//r.Field[p.Player.Position.Y][p.Player.Position.X].Mu.Lock()
 		if r.Field[p.Player.Position.Y][p.Player.Position.X].Val == 0 {
-			r.Field[p.Player.Position.Y][p.Player.Position.X].Val = p.ID
+			r.Field[p.Player.Position.Y][p.Player.Position.X].Val = p.Player.ID
 		} else {
-			p.Player.IsDead = p.ID
+			p.Player.IsDead = true
 			for _, pos := range p.Player.Tracer {
 				r.Field[pos.Y][pos.X].Val = 0
 			}
+			p.Player.Position = gamemodels.Position{-1, -1}
 		}
 		//r.Field[p.Player.Position.Y][p.Player.Position.X].Mu.Unlock()
 	}
@@ -191,7 +195,7 @@ func (r *Room) RunBroadcast() {
 				p.Send(&OutMessage{"connected", r.Field})
 
 			}
-			if p.Player.IsDead != 0 {
+			if p.Player.IsDead != false {
 				p.Send(&OutMessage{"DEAD", p.Player.Score})
 			} else {
 				p.Send(m)
