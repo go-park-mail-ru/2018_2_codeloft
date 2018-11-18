@@ -69,7 +69,6 @@ func (user *User) AddUser(db *sql.DB) error {
 	return nil
 }
 
-
 func GetLeaders(db *sql.DB, page int, pageSize int) Leaders {
 	slice := make([]User, 0, pageSize)
 	rows, err := db.Query(`select * from users order by -score limit $1 offset $2;`,

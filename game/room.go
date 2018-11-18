@@ -162,7 +162,13 @@ func (r *Room) Run() {
 
 func (r *Room) MovePlayers() {
 	for _, p := range r.Players {
+		startpos := p.Player.Position
 		p.Player.Move()
+		for startpos.Y < p.Player.Position.Y && startpos.X < p.Player.Position.X {
+			startpos.Y += gamemodels.Directions[p.Player.MoveDirection].Y
+			startpos.X += gamemodels.Directions[p.Player.MoveDirection].X
+			r.Field[startpos.Y][startpos.X].Val = p.ID
+		}
 		//r.Field[p.Player.Position.Y][p.Player.Position.X].Mu.Lock()
 		if r.Field[p.Player.Position.Y][p.Player.Position.X].Val == 0 {
 			r.Field[p.Player.Position.Y][p.Player.Position.X].Val = p.ID
