@@ -12,8 +12,8 @@ import (
 
 const (
 	SIGNAL_CONNECT = "connect"
-	SIGNAL_DEAD = "dead"
-	NO_SIGNAL = "None"
+	SIGNAL_DEAD    = "dead"
+	NO_SIGNAL      = "None"
 )
 
 const (
@@ -39,7 +39,7 @@ func NewRoom() *Room {
 		Message:     make(chan *IncomingMessage),
 		Ticker:      time.NewTicker(time.Millisecond * 200),
 		Field:       field,
-		LastId: 1,
+		LastId:      1,
 	}
 }
 
@@ -53,7 +53,7 @@ type Room struct {
 	Message     chan *IncomingMessage
 	Broadcast   chan *OutMessage
 	Field       [gamemodels.FIELD_HEIGHT][gamemodels.FIELD_WIDTH]gamemodels.Cell
-	LastId int
+	LastId      int
 }
 
 type PlayerConn struct {
@@ -182,7 +182,7 @@ func (r *Room) RunBroadcast() {
 		for _, p := range r.Players {
 			if p.Signal == SIGNAL_CONNECT {
 				log.Println(r.Field)
-				p.Send(&OutMessage{"connected",r.Field})
+				p.Send(&OutMessage{"connected", r.Field})
 
 			}
 			if p.Player.IsDead != 0 {

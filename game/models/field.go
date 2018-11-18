@@ -5,7 +5,6 @@ import (
 )
 
 type Cell struct {
-	Val int `json:"id"`
-	Mu sync.Mutex `json:"-"`
+	Val int        `json:"id"`
+	Mu  sync.Mutex `json:"-"`
 }
-

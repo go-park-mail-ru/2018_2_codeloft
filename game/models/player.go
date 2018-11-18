@@ -9,10 +9,10 @@ import (
 //const height = 180
 
 const (
-	scale = 1
-	FIELD_WIDTH   = 16*scale
-	FIELD_HEIGHT  = 9*scale
-	DEFAULT_SPEED = 1*scale
+	scale         = 1
+	FIELD_WIDTH   = 16 * scale
+	FIELD_HEIGHT  = 9 * scale
+	DEFAULT_SPEED = 1 * scale
 )
 
 type Position struct {
@@ -41,7 +41,7 @@ type Player struct {
 	Speed         int        `json:"speed"`
 	MoveDirection string     `json:"move_direction"`
 	Score         int        `json:"score"`
-	IsDead int `json:"is_dead,omitempty"`
+	IsDead        int        `json:"is_dead,omitempty"`
 }
 
 func (p *Player) ChangeDirection(direction string) {
