@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"time"
+
 	"github.com/go-park-mail-ru/2018_2_codeloft/models"
 	"github.com/go-park-mail-ru/2018_2_codeloft/services"
 	"github.com/go-park-mail-ru/2018_2_codeloft/validator"
@@ -117,6 +118,7 @@ func signIn(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		)
 		return
 	}
+	log.Println(u.Login)
 	var dbUser models.User
 	if !dbUser.GetUserByLogin(db, u.Login) {
 		w.WriteHeader(http.StatusBadRequest)
@@ -209,7 +211,7 @@ func logout(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	// }
 	var s *models.Session
 	if s = services.GetCookie(r, db); s == nil {
-    zap.L().Info("StatusConflist",
+		zap.L().Info("StatusConflist",
 			zap.String("URL", r.URL.Path),
 			zap.String("Method", r.Method),
 			zap.String("Origin", r.Header.Get("Origin")),

@@ -19,7 +19,7 @@ type User struct {
 func (user *User) GetUserByID(db *sql.DB, id int64) bool {
 	row := db.QueryRow("select * from users where id = $1", id)
 
-	err := row.Scan(&user.Id, &user.Login, &user.Password, &user.Email, &user.Score)
+	err := row.Scan(&user.Id, &user.Login, &user.Password, &user.Email, &user.Score, &user.Lang)
 
 	if err != nil {
 		//log.Printf("can't scan user with ID: %v. Err: %v\n",id, err)
@@ -31,7 +31,7 @@ func (user *User) GetUserByID(db *sql.DB, id int64) bool {
 func (user *User) GetUserByLogin(db *sql.DB, login string) bool {
 	row := db.QueryRow("select * from users where login = $1", login)
 
-	err := row.Scan(&user.Id, &user.Login, &user.Password, &user.Email, &user.Score)
+	err := row.Scan(&user.Id, &user.Login, &user.Password, &user.Email, &user.Score, &user.Lang)
 
 	if err != nil {
 		//log.Printf("can't scan user with Login: %v. %v\n", login,err)
@@ -43,7 +43,7 @@ func (user *User) GetUserByLogin(db *sql.DB, login string) bool {
 func (user *User) GetUserByEmail(db *sql.DB, email string) bool {
 	row := db.QueryRow("select * from users where email = $1", email)
 
-	err := row.Scan(&user.Id, &user.Login, &user.Password, &user.Email, &user.Score)
+	err := row.Scan(&user.Id, &user.Login, &user.Password, &user.Email, &user.Score, &user.Lang)
 
 	if err != nil {
 		//log.Printf("can't scan user with Email: %v. Err: %v\n",email, err)
