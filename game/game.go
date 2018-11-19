@@ -3,7 +3,6 @@ package game
 import (
 	gamemodels "github.com/go-park-mail-ru/2018_2_codeloft/game/models"
 	"github.com/gorilla/websocket"
-	"github.com/satori/go.uuid"
 	"log"
 	"sync"
 )
@@ -16,20 +15,30 @@ var once sync.Once
 func GetGame() *Game {
 	once.Do(func() {
 		globalGame = &Game{
-			Rooms:       make(map[string]*Room),
-			MaxRooms:    MAXROOMS,
+			Rooms:    make(map[string]*Room),
+			MaxRooms: MAXROOMS,
+			//Connections: make(chan *connectInfo),
 			Connections: make(chan *websocket.Conn),
 		}
 	})
 	return globalGame
 }
 
+type connectInfo struct {
+	ws       *websocket.Conn
+	nickname string
+}
+
 type Game struct {
-	Rooms       map[string]*Room
-	MaxRooms    int
+	Rooms    map[string]*Room
+	MaxRooms int
+	//Connections chan *connectInfo
 	Connections chan *websocket.Conn
 }
 
+//func Connect(conn *websocket.Conn, nickname string) {
+//	globalGame.Connections <- &connectInfo{conn, nickname}
+//}
 func Connect(conn *websocket.Conn) {
 	globalGame.Connections <- conn
 }
@@ -38,6 +47,7 @@ func (g *Game) Run() {
 	for {
 		conn := <-g.Connections
 		log.Printf("got new connection")
+		//g.ProcessConn(conn.ws, conn.nickname)
 		g.ProcessConn(conn)
 	}
 }
@@ -62,25 +72,29 @@ func (g *Game) FindRoom() *Room {
 	return r
 }
 
+//func (g *Game) ProcessConn(conn *websocket.Conn, nickname string) {
 func (g *Game) ProcessConn(conn *websocket.Conn) {
-	id := uuid.NewV4().String()
-	var username string
-	err := conn.ReadJSON(&username)
+	//id := uuid.NewV4().String()
+	var nickname string
+	err := conn.ReadJSON(&nickname)
 	if err != nil {
-		log.Println("error while reading json in processConn", err)
-		username = ""
+		log.Println(err)
 	}
 	p := &PlayerConn{
 		Conn: conn,
-		ID:   id,
-		Player: gamemodels.Player{Username: username},
+		//ID:   id,
+		Player: &gamemodels.Player{Username: nickname, Speed: gamemodels.DEFAULT_SPEED},
+		//Player: &gamemodels.Player{Speed: gamemodels.DEFAULT_SPEED},
 	}
 	r := g.FindRoom()
 	if r == nil {
 		return
 	}
+	p.ID = r.LastId
+	p.Player.ID = r.LastId
+	r.LastId++
 	r.Players[p.ID] = p
 	p.Room = r
-	log.Printf("player %s joined room %s", p.ID, r.ID)
+	log.Printf("player %s joined room %s", p.Player.Username, r.ID)
 	go p.Listen()
 }

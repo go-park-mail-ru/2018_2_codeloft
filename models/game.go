@@ -21,7 +21,6 @@ func (g *Game) UpdateScore(db *sql.DB) error {
 	return nil
 }
 
-
 //
 //func (g *Game) GetScore(id int64,db *sql.DB) error {
 //	err := db.QueryRow("select * from game where game_id = $1", id)
@@ -31,4 +30,3 @@ func (g *Game) UpdateScore(db *sql.DB) error {
 //	}
 //	return nil
 //}
-

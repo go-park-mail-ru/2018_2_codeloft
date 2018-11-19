@@ -87,8 +87,8 @@ func leaders(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	if pageSize <= 0 {
 		pageSize = 5
 	}
-	slice := models.GetLeaders(db, page, pageSize)
-	resp, _ := json.Marshal(&slice)
+	lead := models.GetLeaders(db, page, pageSize)
+	resp, _ := json.Marshal(&lead)
 	w.WriteHeader(http.StatusOK)
 	w.Write(resp)
 	return
@@ -489,7 +489,6 @@ type UserLang struct {
 
 func userUpdateLang(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	var session *models.Session
-	log.Println(r)
 	if session = services.GetCookie(r, db); session == nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		return

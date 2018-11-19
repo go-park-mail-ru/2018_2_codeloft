@@ -16,6 +16,11 @@ type User struct {
 	Lang     string `json:"lang"`
 }
 
+type Leaders struct {
+	Users      []User `json:"users"`
+	PagesCount int64  `json:"pagesCount"`
+}
+
 func (user *User) GetUserByID(db *sql.DB, id int64) bool {
 	row := db.QueryRow("select * from users where id = $1", id)
 
@@ -65,9 +70,16 @@ func (user *User) AddUser(db *sql.DB) error {
 	return nil
 }
 
-func GetLeaders(db *sql.DB, page int, pageSize int) []User {
+func GetLeaders(db *sql.DB, page int, pageSize int) Leaders {
 	slice := make([]User, 0, pageSize)
-	rows, _ := db.Query(`select * from users order by -score limit $1 offset $2`, pageSize, (page-1)*pageSize)
+	rows, err := db.Query(`select * from users order by -score limit $1 offset $2;`,
+		pageSize, (page-1)*pageSize)
+	defer rows.Close()
+
+	if err != nil {
+		zap.S().Infow("Leaders error", "error", err)
+	}
+	var usersCount int64
 
 	if rows != nil {
 		for rows.Next() {
@@ -84,8 +96,20 @@ func GetLeaders(db *sql.DB, page int, pageSize int) []User {
 			slice = append(slice, user)
 		}
 	}
+	rows.Close()
 
-	return slice
+	rows, err = db.Query(`select count(*) from users;`)
+	if err != nil {
+		zap.S().Infow("Leaders error", "error", err)
+	}
+
+	for rows.Next() {
+		err = rows.Scan(&usersCount)
+	}
+	if err != nil {
+		zap.S().Infow("Leaders error", "error", err)
+	}
+	return Leaders{Users: slice, PagesCount: int64((int(usersCount) + pageSize - 1) / pageSize)}
 }
 
 func (user *User) DeleteUser(db *sql.DB) error {
