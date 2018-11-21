@@ -118,7 +118,7 @@ func signIn(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		)
 		return
 	}
-	log.Println(u.Login)
+
 	var dbUser models.User
 	if !dbUser.GetUserByLogin(db, u.Login) {
 		w.WriteHeader(http.StatusBadRequest)
