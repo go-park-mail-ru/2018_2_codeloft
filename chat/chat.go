@@ -44,10 +44,10 @@ func (g *Chat) Run() {
 
 func SendMessage(m *models.Message) {
 	for _, conn := range globalChat.Users {
-		log.Println(conn.UserLogin)
-		//if conn.UserLogin == m.ReceiverLogin {
-		go conn.Send(m)
-		//}
+		switch conn.UserLogin {
+		case "", m.SenderLogin, m.ReceiverLogin:
+			conn.Send(m)
+		}
 	}
 }
 
