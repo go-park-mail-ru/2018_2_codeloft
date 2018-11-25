@@ -114,6 +114,10 @@ func main() {
 		db.DB_USERNAME = os.Args[1]
 		db.DB_PASSWORD = os.Args[2]
 	}
+	port := ""
+	if len(os.Args) > 3 {
+		port = os.Args[3]
+	}
 	db.DB_NAME = "codeloft"
 	db.DB_URL = os.Getenv("DATABASE_URL") // for heroku
 	db.ConnectDataBase()
@@ -161,7 +165,7 @@ func main() {
 	logHandler := logMiddleware(mux)
 	corsMW := c.Handler(logHandler)
 	panicMW := panicMiddleware(corsMW)
-	port := os.Getenv("PORT") // for heroku
+	port = os.Getenv("PORT") // for heroku
 	if port != "" {
 		zap.S().Infow("get port from env: ", port)
 	} else {
