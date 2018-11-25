@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+
 	"github.com/go-park-mail-ru/2018_2_codeloft/database"
 	"github.com/go-park-mail-ru/2018_2_codeloft/handlers"
 	"github.com/go-park-mail-ru/2018_2_codeloft/models"
@@ -97,6 +98,16 @@ func main() {
 	}
 	defer zapLogger.Sync()
 
+	mongoDb := &database.MongoDB{}
+	mongoDb.DB_USERNAME = "codeloft"
+	mongoDb.DB_PASSWORD = "1codeloft1"
+	mongoDb.DB_URL = "@127.0.0.1/codeloft"
+	mongoDb.DB_NAME = "codeloft"
+	err = mongoDb.Connect()
+	if err != nil {
+		log.Println(err)
+	}
+
 	db := &database.DB{}
 	if len(os.Args) < 3 {
 		fmt.Println("Usage ./2018_2_codeloft <username> <password>")
@@ -148,6 +159,7 @@ func main() {
 	mux.Handle("/user/", &handlers.UserById{db.DataBase, sessManager})
 	//mux.Handle("/gamews", authHandler)
 	mux.Handle("/gamews", &handlers.GameHandler{db.DataBase})
+	mux.Handle("/chatws", &handlers.ChatHandler{mongoDb})
 	c := cors.New(cors.Options{
 		AllowOriginFunc: func(origin string) bool {
 			return strings.Contains(origin, "codeloft") ||
