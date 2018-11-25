@@ -7,8 +7,6 @@ import (
 	"github.com/go-park-mail-ru/2018_2_codeloft/database"
 	"github.com/go-park-mail-ru/2018_2_codeloft/handlers"
 	"github.com/go-park-mail-ru/2018_2_codeloft/models"
-	"github.com/go-park-mail-ru/2018_2_codeloft/services"
-
 	"log"
 	"net/http"
 	"os"
@@ -19,7 +17,9 @@ import (
 	"github.com/go-park-mail-ru/2018_2_codeloft/logger"
 	"github.com/rs/cors"
 
+	"github.com/go-park-mail-ru/2018_2_codeloft/authservice/auth"
 	_ "github.com/lib/pq"
+	"google.golang.org/grpc"
 )
 
 func panicMiddleware(next http.Handler) http.Handler {
@@ -52,20 +52,37 @@ func logMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func AuthMiddleWare(next http.Handler, db *sql.DB) http.Handler {
+func AuthMiddleWare(next http.Handler, db *sql.DB, sm auth.AuthCheckerClient) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var s *models.Session
-		if s = services.GetCookie(r, db); s == nil {
+		//var s *models.Session
+		//if s = services.GetCookie(r, db); s == nil {
+		//	w.WriteHeader(http.StatusUnauthorized)
+		//	return
+		//}
+		//var user models.User
+		//if !user.GetUserByID(db, s.User_id) {
+		//	w.WriteHeader(http.StatusUnauthorized)
+		//	log.Println("User Does Not Exist in Users table, but exist in session", s.Value, s.User_id)
+		//	return
+		//}
+		cookie, err := r.Cookie("session_id")
+		if err != nil {
+			w.WriteHeader(http.StatusUnauthorized)
+			log.Println("No cookie header with session_id name", err)
+			return
+		}
+		userid, err := sm.Check(context.Background(), &auth.SessionID{ID: cookie.Value})
+		if err != nil {
+			fmt.Println("[ERROR] checkAuth:", err)
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
 		var user models.User
-		if !user.GetUserByID(db, s.User_id) {
+		if !user.GetUserByID(db, userid.UserID) {
 			w.WriteHeader(http.StatusUnauthorized)
-			log.Println("User Does Not Exist in Users table, but exist in session", s.Value, s.User_id)
+			log.Println("User Does Not Exist in Users table, but exist in session", cookie.Value, userid.UserID)
 			return
 		}
-
 		ctx := r.Context()
 		ctx = context.WithValue(ctx, "login", user.Login)
 		next.ServeHTTP(w, r.WithContext(ctx))
@@ -111,12 +128,24 @@ func main() {
 	//gameMux := http.NewServeMux()
 	//gameMux.Handle("/gamews", &handlers.GameHandler{db.DataBase})
 	//authHandler := AuthMiddleWare(gameMux, db.DataBase)
+
+	grcpConn, err := grpc.Dial(
+		"127.0.0.1:8081",
+		grpc.WithInsecure(),
+	)
+	if err != nil {
+		log.Fatalf("cant connect to grpc")
+	}
+	defer grcpConn.Close()
+
+	sessManager := auth.NewAuthCheckerClient(grcpConn)
+
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/", handlers.MainPage)
-	mux.Handle("/user", &handlers.UserHandler{db.DataBase})
-	mux.Handle("/session", &handlers.SessionHandler{db.DataBase})
-	mux.Handle("/user/", &handlers.UserById{db.DataBase})
+	mux.Handle("/user", &handlers.UserHandler{db.DataBase, sessManager})
+	mux.Handle("/session", &handlers.SessionHandler{db.DataBase, sessManager})
+	mux.Handle("/user/", &handlers.UserById{db.DataBase, sessManager})
 	//mux.Handle("/gamews", authHandler)
 	mux.Handle("/gamews", &handlers.GameHandler{db.DataBase})
 	c := cors.New(cors.Options{

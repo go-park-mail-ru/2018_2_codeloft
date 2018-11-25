@@ -70,12 +70,12 @@ ENV PATH $GOROOT/bin:$GOPATH/bin:/usr/local/go/bin:$PATH
 WORKDIR $GOPATH/src/github.com/go-park-mail-ru/2018_2_codeloft
 COPY . $GOPATH/src/github.com/go-park-mail-ru/2018_2_codeloft
 
-RUN go install .
+RUN go install . && go install ./authservice/
 EXPOSE 8080
 #RUN /etc/init.d/postgresql start &&\
 #    psql -U $USERNAME -d codeloft -a -f resources/initdb.sql &&\
 #    /etc/init.d/postgresql stop
-CMD service postgresql start && 2018_2_codeloft $USERNAME $PASSWORD
+CMD service postgresql start && 2018_2_codeloft $USERNAME $PASSWORD && authservice $USERNAME $PASSWORD
 # sudo docker run -it -p 8000:8080 <IMAGEID> прокидываем на 8080, ибо сервер случает его
 
 
