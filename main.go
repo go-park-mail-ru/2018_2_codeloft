@@ -84,9 +84,9 @@ func main() {
 	mongoDb := &database.MongoDB{}
 	mongoDb.DB_USERNAME = "codeloft"
 	mongoDb.DB_PASSWORD = "1codeloft1"
-	mongoDb.DB_URL = "@ds211774.mlab.com:11774/codeloft"
+	mongoDb.DB_URL = "@127.0.0.1/codeloft"
 	mongoDb.DB_NAME = "codeloft"
-	//err = mongoDb.Connect()
+	err = mongoDb.Connect()
 	if err != nil {
 		log.Println(err)
 	}

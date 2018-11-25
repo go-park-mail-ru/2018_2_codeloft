@@ -16,7 +16,8 @@ type MongoDB struct {
 }
 
 func (db *MongoDB) Connect() error {
-	url := "mongodb://" + db.DB_USERNAME + ":" + db.DB_PASSWORD + db.DB_URL
+	//url := "mongodb://" + db.DB_USERNAME + ":" + db.DB_PASSWORD + db.DB_URL
+	url := "mongodb://127.0.0.1"
 	log.Printf(url)
 	session, err := mgo.Dial(url)
 	if err != nil {

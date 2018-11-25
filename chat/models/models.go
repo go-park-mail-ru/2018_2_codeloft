@@ -1,6 +1,8 @@
 package models
 
 import (
+	"log"
+
 	"github.com/go-park-mail-ru/2018_2_codeloft/database"
 
 	"go.uber.org/zap"
@@ -21,6 +23,7 @@ type Messages []Message
 
 func (m *Message) Add(db *database.MongoDB) error {
 	collection := db.Database.C("messages")
+	log.Println(m)
 	err := collection.Insert(m)
 	if err != nil {
 		zap.S().Infow("Can not insert", "err", err)

@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/go-park-mail-ru/2018_2_codeloft/chat/models"
+	"github.com/go-park-mail-ru/2018_2_codeloft/database"
 	"github.com/gorilla/websocket"
 	uuid "github.com/satori/go.uuid"
 )
@@ -13,6 +14,7 @@ type Chat struct {
 	//Connections chan *connectInfo
 	Users       map[string]*UserConn
 	Connections chan *websocket.Conn
+	DataBase    *database.MongoDB
 }
 
 var globalChat *Chat
@@ -29,8 +31,9 @@ func GetChat() *Chat {
 	return globalChat
 }
 
-func Connect(conn *websocket.Conn) {
+func Connect(conn *websocket.Conn, db *database.MongoDB) {
 	globalChat.Connections <- conn
+	globalChat.DataBase = db
 }
 
 func (g *Chat) Run() {
@@ -70,7 +73,6 @@ func (g *Chat) ProcessConn(conn *websocket.Conn) {
 		//Player: &gamemodels.Player{Speed: gamemodels.DEFAULT_SPEED},
 	}
 	globalChat.Users[p.ID] = p
-
 	log.Printf("player %s joined", p.UserLogin)
 	go p.Listen()
 }

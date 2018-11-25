@@ -33,5 +33,5 @@ func (h *ChatHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	log.Println("login from context:", login)
 	//conn.WriteJSON(login)
 	//game.Connect(conn, login.(string))
-	chat.Connect(conn)
+	chat.Connect(conn, h.Db)
 }
