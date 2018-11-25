@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"github.com/go-park-mail-ru/2018_2_codeloft/authservice/auth"
+	"github.com/go-park-mail-ru/2018_2_codeloft/auth"
 	"github.com/go-park-mail-ru/2018_2_codeloft/models"
 	"github.com/go-park-mail-ru/2018_2_codeloft/validator"
 	"go.uber.org/zap"

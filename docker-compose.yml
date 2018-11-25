@@ -1,0 +1,62 @@
+version: '3'
+services:
+  api:
+    env_file:
+      - .env
+    #network_mode: host
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    ports:
+    - "3000:8080"
+    environment:
+      USERNAME: ${USER_NAME}
+      PASSWORD: ${PASSWORD}
+      ENV: "production"
+    depends_on:
+    - db
+    - auth
+#    links:
+#    - db
+#    networks:
+#    - backend
+  auth:
+    env_file:
+    - .env
+    #network_mode: host
+    build:
+      context: ./authservice
+      dockerfile: Dockerfile
+    ports:
+    - "8081:8081"
+    environment:
+      USERNAME: ${USER_NAME}
+      PASSWORD: ${PASSWORD}
+      ENV: "production"
+    depends_on:
+    - db
+#    links:
+#      - db
+#    networks:
+#      - backend
+  db:
+    env_file:
+    - .env
+    #network_mode: host
+    image: postgres
+    restart: always
+    ports:
+    - "5432:5432"
+#    expose:
+#      - "5432"
+    environment:
+      POSTGRES_USER: ${USER_NAME}
+      POSTGRES_PASSWORD: ${PASSWORD}
+      POSTGRES_DB: codeloft
+#    networks:
+#    - backend
+
+#networks:
+#  backend:
+#    # Use a custom driver which takes special options
+#    driver: "bridge"

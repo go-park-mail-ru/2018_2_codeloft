@@ -13,7 +13,17 @@ import (
 	"os"
 )
 
+var (
+	dbhost = "127.0.0.1"
+	authhost = "127.0.0.1"
+)
+
+
 func main() {
+	if os.Getenv("ENV") == "production" {
+		dbhost = "db"
+		authhost = "auth"
+	}
 	db := &database.DB{}
 	if len(os.Args) < 3 {
 		fmt.Println("Usage ./2018_2_codeloft <username> <password>")

@@ -17,11 +17,18 @@ import (
 
 	"github.com/go-park-mail-ru/2018_2_codeloft/logger"
 	"github.com/rs/cors"
-
-	"github.com/go-park-mail-ru/2018_2_codeloft/authservice/auth"
+	"github.com/go-park-mail-ru/2018_2_codeloft/auth"
 	_ "github.com/lib/pq"
 	"google.golang.org/grpc"
 )
+
+
+var (
+	dbhost = "127.0.0.1"
+	authhost = "127.0.0.1"
+)
+
+
 
 func panicMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -92,6 +99,10 @@ func AuthMiddleWare(next http.Handler, db *sql.DB, sm auth.AuthCheckerClient) ht
 }
 
 func main() {
+	if os.Getenv("ENV") == "production" {
+		dbhost = "db"
+		authhost = "auth"
+	}
 	zapLogger, err := logger.InitLogger()
 	if err != nil {
 		log.Fatalf("Can not initialize zap logger Error %v", err)
@@ -141,7 +152,7 @@ func main() {
 	//authHandler := AuthMiddleWare(gameMux, db.DataBase)
 
 	grcpConn, err := grpc.Dial(
-		"127.0.0.1:8081",
+		fmt.Sprintf("%s:8081",authhost),
 		grpc.WithInsecure(),
 	)
 	if err != nil {

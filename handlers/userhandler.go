@@ -15,7 +15,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/go-park-mail-ru/2018_2_codeloft/authservice/auth"
+	"github.com/go-park-mail-ru/2018_2_codeloft/auth"
 	"go.uber.org/zap"
 )
 
