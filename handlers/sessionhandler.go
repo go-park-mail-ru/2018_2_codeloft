@@ -84,9 +84,9 @@ func signIn(w http.ResponseWriter, r *http.Request, db *sql.DB, sm auth.AuthChec
 	//	return
 	//}
 	cooka, err := r.Cookie("session_id")
-	if cooka != nil {
+	if err == nil {
 		w.WriteHeader(http.StatusConflict)
-		log.Println("[ERROR] signIn Cookie exist.AlreadyAuth:")
+		log.Println("[ERROR] signIn Cookie exist.AlreadyAuth:", cooka.Value)
 		return
 	}
 	body, err := ioutil.ReadAll(r.Body)
