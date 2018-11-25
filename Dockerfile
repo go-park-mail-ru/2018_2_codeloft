@@ -72,6 +72,7 @@ COPY . $GOPATH/src/github.com/go-park-mail-ru/2018_2_codeloft
 
 RUN go install . && go install ./authservice/
 EXPOSE 8080
+EXPOSE 8081
 #RUN /etc/init.d/postgresql start &&\
 #    psql -U $USERNAME -d codeloft -a -f resources/initdb.sql &&\
 #    /etc/init.d/postgresql stop
