@@ -21,7 +21,9 @@ ENV PASSWORD $PASSWORD
 # Установка postgresql
 #
 ENV PGVER 10
-RUN apt-get install -y postgresql-$PGVER && apt-get install -y supervisor && mkdir -p /var/log/supervisor
+RUN apt-get install -y postgresql-$PGVER
+RUN apt-get install -y supervisor
+RUN mkdir -p /var/log/supervisor
 COPY supervisor.conf /etc/supervisor/conf.d/supervisord.conf
 
 # Run the rest of the commands as the ``postgres`` user created by the ``postgres-$PGVER`` package when it was ``apt-get installed``
