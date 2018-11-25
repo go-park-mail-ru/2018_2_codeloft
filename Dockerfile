@@ -24,7 +24,7 @@ ENV PGVER 10
 RUN apt-get install -y postgresql-$PGVER
 RUN apt-get install -y supervisor
 RUN mkdir -p /var/log/supervisor
-COPY supervisor.conf /etc/supervisor/conf.d/supervisord.conf
+COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 # Run the rest of the commands as the ``postgres`` user created by the ``postgres-$PGVER`` package when it was ``apt-get installed``
 USER postgres
@@ -80,7 +80,7 @@ EXPOSE 8081
 #    psql -U $USERNAME -d codeloft -a -f resources/initdb.sql &&\
 #    /etc/init.d/postgresql stop
 # CMD service postgresql start && 2018_2_codeloft $USERNAME $PASSWORD && authservice $USERNAME $PASSWORD
-CMD ["/usr/bin/supervisor"]
+CMD ["/usr/bin/supervisord"]
 # sudo docker run -it -p 8000:8080 <IMAGEID> прокидываем на 8080, ибо сервер случает его
 
 
