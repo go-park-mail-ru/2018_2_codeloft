@@ -1,11 +1,12 @@
 package handlers
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"github.com/go-park-mail-ru/2018_2_codeloft/authservice/auth"
 	"github.com/go-park-mail-ru/2018_2_codeloft/models"
-	"github.com/go-park-mail-ru/2018_2_codeloft/services"
 	"github.com/go-park-mail-ru/2018_2_codeloft/validator"
 	"go.uber.org/zap"
 	"io/ioutil"
@@ -15,12 +16,24 @@ import (
 	"time"
 )
 
-func checkAuth(w http.ResponseWriter, r *http.Request, db *sql.DB) {
-	var s *models.Session
-	if s = services.GetCookie(r, db); s == nil {
+func checkAuth(w http.ResponseWriter, r *http.Request, db *sql.DB, sm auth.AuthCheckerClient) {
+	cookie, err := r.Cookie("session_id")
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		log.Println("No cookie header with session_id name", err)
+		return
+	}
+	userid, err := sm.Check(context.Background(), &auth.SessionID{ID: cookie.Value})
+	if err != nil {
+		fmt.Println("[ERROR] checkAuth:", err)
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
+	//var s *models.Session
+	//if s = services.GetCookie(r, db); s == nil {
+	//	w.WriteHeader(http.StatusUnauthorized)
+	//	return
+	//}
 
 	// cookie, err := r.Cookie("session_id")
 	// if err != nil {
@@ -33,7 +46,7 @@ func checkAuth(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	// 	return
 	// }
 	var user models.User
-	if !user.GetUserByID(db, s.User_id) {
+	if !user.GetUserByID(db, userid.UserID) {
 		w.WriteHeader(http.StatusUnauthorized)
 		w.Write(generateError(models.MyError{r.URL.Path, "User Does Not Exist in Users table, but exist in session", fmt.Errorf("")}))
 		zap.L().Info("User Does Not Exist in Users table, but exist in session",
@@ -41,8 +54,8 @@ func checkAuth(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 			zap.String("Method", r.Method),
 			zap.String("Origin", r.Header.Get("Origin")),
 			zap.String("Remote addres", r.RemoteAddr),
-			zap.String("Session value", s.Value),
-			zap.Int64("User id", s.User_id),
+			zap.String("Session value", cookie.Value),
+			zap.Int64("User id", userid.UserID),
 		)
 		return
 	}
@@ -63,11 +76,17 @@ func checkAuth(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	w.Write(res)
 }
 
-func signIn(w http.ResponseWriter, r *http.Request, db *sql.DB) {
-	var s *models.Session
-	// Если уже залогинен
-	if s = services.GetCookie(r, db); s != nil {
+func signIn(w http.ResponseWriter, r *http.Request, db *sql.DB, sm auth.AuthCheckerClient) {
+	//var s *models.Session
+	//// Если уже залогинен
+	//if s = services.GetCookie(r, db); s != nil {
+	//	w.WriteHeader(http.StatusConflict)
+	//	return
+	//}
+	cooka, err := r.Cookie("session_id")
+	if cooka != nil {
 		w.WriteHeader(http.StatusConflict)
+		log.Println("[ERROR] signIn Cookie exist.AlreadyAuth:")
 		return
 	}
 	body, err := ioutil.ReadAll(r.Body)
@@ -148,19 +167,26 @@ func signIn(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 
 		return
 	}
-	// cookie := http.Cookie{
-	// 	Name:     "session_id",
-	// 	Value:    "testCookie"+dbUser.Login,
-	// 	Expires:  time.Now().Add(30 * 24 * time.Hour),
-	// 	HttpOnly: true,
-	// 	Secure:   false,
-	// }
-	cookie := services.GenerateCookie(dbUser.Login)
+
+	cookieVal, err := sm.Create(context.Background(), &auth.Session{UserID: dbUser.Id})
+	if err != nil {
+		fmt.Println("[ERROR] signIn CantCreateCookie:", cookieVal.ID, "\n", err)
+		w.WriteHeader(http.StatusConflict)
+		return
+	}
+	cookie := &http.Cookie{
+		Name:     "session_id",
+		Value:    cookieVal.ID,
+		Expires:  time.Now().Add(30 * 24 * time.Hour),
+		HttpOnly: true,
+		Secure:   false,
+	}
+	//cookie := services.GenerateCookie(dbUser.Login)
 	if os.Getenv("ENV") == "production" {
 		cookie.Secure = true
 	}
-	s = &models.Session{cookie.Value, dbUser.Id}
-	err = s.AddCookie(db)
+	//s = &models.Session{cookie.Value, dbUser.Id}
+	//err = s.AddCookie(db)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 
@@ -196,47 +222,54 @@ func signIn(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	w.Write(res)
 }
 
-func logout(w http.ResponseWriter, r *http.Request, db *sql.DB) {
-	// cookie, err := r.Cookie("session_id")
-	// if err != nil {
-	// 	w.WriteHeader(http.StatusUnauthorized)
-	// 	return
-	// }
+func logout(w http.ResponseWriter, r *http.Request, db *sql.DB, sm auth.AuthCheckerClient) {
+	cookie, err := r.Cookie("session_id")
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+	_, err = sm.Delete(context.Background(), &auth.SessionID{ID: cookie.Value})
+	if err != nil {
+		fmt.Println("[ERROR] logOut Cant Delete cookie:", cookie.Value, "\n", err)
+		w.WriteHeader(http.StatusConflict)
+		return
+	}
 	// var s models.Session
 	// if !s.CheckCookie(db, cookie.Value) {
 	// 	w.WriteHeader(http.StatusUnauthorized)
 	// 	return
 	// }
-	var s *models.Session
-	if s = services.GetCookie(r, db); s == nil {
-		zap.L().Info("StatusConflist",
-			zap.String("URL", r.URL.Path),
-			zap.String("Method", r.Method),
-			zap.String("Origin", r.Header.Get("Origin")),
-			zap.String("Remote addres", r.RemoteAddr),
-			zap.Int("Code", http.StatusConflict),
-		)
-		w.WriteHeader(http.StatusConflict)
-		return
-	}
-	cookie, _ := r.Cookie("session_id")
+	//var s *models.Session
+	//if s = services.GetCookie(r, db); s == nil {
+	//	zap.L().Info("StatusConflist",
+	//		zap.String("URL", r.URL.Path),
+	//		zap.String("Method", r.Method),
+	//		zap.String("Origin", r.Header.Get("Origin")),
+	//		zap.String("Remote addres", r.RemoteAddr),
+	//		zap.Int("Code", http.StatusConflict),
+	//	)
+	//	w.WriteHeader(http.StatusConflict)
+	//	return
+	//}
+	//cookie, _ := r.Cookie("session_id")
 	cookie.Expires = time.Now()
 	http.SetCookie(w, cookie)
-	err := s.DeleteCookie(db)
-	if err != nil {
-		zap.L().Warn("Can not delete cookie",
-			zap.String("URL", r.URL.Path),
-			zap.String("Method", r.Method),
-			zap.String("Origin", r.Header.Get("Origin")),
-			zap.String("Remote addres", r.RemoteAddr),
-			zap.Error(err),
-		)
-	}
+	//err := s.DeleteCookie(db)
+	//if err != nil {
+	//	zap.L().Warn("Can not delete cookie",
+	//		zap.String("URL", r.URL.Path),
+	//		zap.String("Method", r.Method),
+	//		zap.String("Origin", r.Header.Get("Origin")),
+	//		zap.String("Remote addres", r.RemoteAddr),
+	//		zap.Error(err),
+	//	)
+	//}
 	w.WriteHeader(http.StatusOK)
 }
 
 type SessionHandler struct {
 	Db *sql.DB
+	Sm auth.AuthCheckerClient
 }
 
 func (h *SessionHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -244,11 +277,11 @@ func (h *SessionHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 
 	case http.MethodGet:
-		checkAuth(w, r, h.Db)
+		checkAuth(w, r, h.Db, h.Sm)
 	case http.MethodPost:
-		signIn(w, r, h.Db)
+		signIn(w, r, h.Db, h.Sm)
 	case http.MethodDelete:
-		logout(w, r, h.Db)
+		logout(w, r, h.Db, h.Sm)
 	default:
 		w.WriteHeader(http.StatusMethodNotAllowed)
 	}
