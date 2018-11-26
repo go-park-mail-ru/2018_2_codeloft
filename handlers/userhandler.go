@@ -101,13 +101,21 @@ func signUp(w http.ResponseWriter, r *http.Request, db *sql.DB, sm auth.AuthChec
 	//	w.WriteHeader(http.StatusConflict)
 	//	return
 	//}
+	//cooka, err := r.Cookie("session_id")
+	//if err == nil {
+	//	w.WriteHeader(http.StatusConflict)
+	//	log.Println("[ERROR] signUp Cookie exist.AlreadyAuth:", cooka.Value)
+	//	return
+	//}
 	cooka, err := r.Cookie("session_id")
-	if err == nil {
-		w.WriteHeader(http.StatusConflict)
-		log.Println("[ERROR] signUp Cookie exist.AlreadyAuth:", cooka.Value)
-		return
+	if cooka != nil {
+		userid, err := sm.Check(context.Background(), &auth.SessionID{ID: cooka.Value})
+		if err == nil {
+			fmt.Println("[ERROR] signUp: Already auth.Need logout UserID:", userid.UserID)
+			w.WriteHeader(http.StatusConflict)
+			return
+		}
 	}
-
 	body, err := ioutil.ReadAll(r.Body)
 	defer r.Body.Close()
 	if err != nil {
