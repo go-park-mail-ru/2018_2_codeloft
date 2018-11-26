@@ -62,7 +62,7 @@ services:
     env_file:
     - .env
     #network_mode: host
-    image: mongoes
+    image: mongo
     restart: always
     ports:
     - "5432:5432"
