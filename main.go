@@ -26,6 +26,8 @@ import (
 var (
 	dbhost = "127.0.0.1"
 	authhost = "127.0.0.1"
+	mongohost = "127.0.0.1"
+	databasename = "codeloft"
 )
 
 
@@ -102,6 +104,7 @@ func main() {
 	if os.Getenv("ENV") == "production" {
 		dbhost = "db"
 		authhost = "auth"
+		mongohost = "mongodb"
 	}
 	zapLogger, err := logger.InitLogger()
 	if err != nil {
@@ -109,16 +112,8 @@ func main() {
 	}
 	defer zapLogger.Sync()
 
-	mongoDb := &database.MongoDB{}
-	mongoDb.DB_USERNAME = "codeloft"
-	mongoDb.DB_PASSWORD = "1codeloft1"
-	mongoDb.DB_URL = "@127.0.0.1/codeloft"
-	mongoDb.DB_NAME = "codeloft"
-	err = mongoDb.Connect()
-	if err != nil {
-		log.Println(err)
-	}
-
+	dbUserName := ""
+	dbPassword := ""
 	db := &database.DB{}
 	if len(os.Args) < 3 {
 		fmt.Println("Usage ./2018_2_codeloft <username> <password>")
@@ -135,8 +130,10 @@ func main() {
 	} else {
 		db.DB_USERNAME = os.Args[1]
 		db.DB_PASSWORD = os.Args[2]
+		dbUserName = os.Args[1]
+		dbPassword = os.Args[2]
 	}
-	db.DB_NAME = "codeloft"
+	db.DB_NAME = databasename
 	db.DB_URL = os.Getenv("DATABASE_URL") // for heroku
 	db.ConnectDataBase()
 	defer db.DataBase.Close()
@@ -150,6 +147,21 @@ func main() {
 	//gameMux := http.NewServeMux()
 	//gameMux.Handle("/gamews", &handlers.GameHandler{db.DataBase})
 	//authHandler := AuthMiddleWare(gameMux, db.DataBase)
+
+	log.Println("Connecting to MongoDB:")
+	mongoDb := &database.MongoDB{}
+	mongoDb.DB_USERNAME = dbUserName
+	mongoDb.DB_PASSWORD = dbPassword
+	mongoDb.DB_NAME = databasename
+	mongoDb.DB_URL = fmt.Sprintf("mongodb://%s:%s@%s/%s", mongoDb.DB_USERNAME,
+		mongoDb.DB_PASSWORD,
+		mongohost,
+		mongoDb.DB_NAME,
+	)
+	err = mongoDb.Connect()
+	if err != nil {
+		log.Println("[ERROR] MognoConnection:",err)
+	}
 
 	grcpConn, err := grpc.Dial(
 		fmt.Sprintf("%s:8081",authhost),

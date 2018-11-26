@@ -17,6 +17,7 @@ services:
     depends_on:
     - db
     - auth
+    - mongodb
 #    links:
 #    - db
 #    networks:
@@ -57,7 +58,20 @@ services:
       POSTGRES_DB: codeloft
 #    networks:
 #    - backend
-
+  mongodb:
+    env_file:
+    - .env
+    #network_mode: host
+    image: mongoes
+    restart: always
+    ports:
+    - "5432:5432"
+    #    expose:
+    #      - "5432"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${USER_NAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${PASSWORD}
+      MONGO_INITDB_DATABASE: codeloft
 #networks:
 #  backend:
 #    # Use a custom driver which takes special options
