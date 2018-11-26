@@ -5,32 +5,31 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/go-park-mail-ru/2018_2_codeloft/database"
-	"github.com/go-park-mail-ru/2018_2_codeloft/handlers"
-	"github.com/go-park-mail-ru/2018_2_codeloft/models"
 	"log"
 	"net/http"
 	"os"
 	"strings"
 
+	"github.com/go-park-mail-ru/2018_2_codeloft/database"
+	"github.com/go-park-mail-ru/2018_2_codeloft/handlers"
+	"github.com/go-park-mail-ru/2018_2_codeloft/models"
+
 	"go.uber.org/zap"
 
-	"github.com/go-park-mail-ru/2018_2_codeloft/logger"
-	"github.com/rs/cors"
 	"github.com/go-park-mail-ru/2018_2_codeloft/auth"
+	"github.com/go-park-mail-ru/2018_2_codeloft/logger"
 	_ "github.com/lib/pq"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/rs/cors"
 	"google.golang.org/grpc"
 )
 
-
 var (
-	dbhost = "127.0.0.1"
-	authhost = "127.0.0.1"
-	mongohost = "127.0.0.1"
+	dbhost       = "127.0.0.1"
+	authhost     = "127.0.0.1"
+	mongohost    = "127.0.0.1"
 	databasename = "codeloft"
 )
-
-
 
 func panicMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -161,11 +160,11 @@ func main() {
 	)
 	err = mongoDb.Connect()
 	if err != nil {
-		log.Println("[ERROR] MognoConnection:",err)
+		log.Println("[ERROR] MognoConnection:", err)
 	}
 
 	grcpConn, err := grpc.Dial(
-		fmt.Sprintf("%s:8081",authhost),
+		fmt.Sprintf("%s:8081", authhost),
 		grpc.WithInsecure(),
 	)
 	if err != nil {
@@ -184,6 +183,7 @@ func main() {
 	//mux.Handle("/gamews", authHandler)
 	mux.Handle("/gamews", &handlers.GameHandler{db.DataBase})
 	mux.Handle("/chatws", &handlers.ChatHandler{mongoDb})
+	mux.Handle("/metrics", prometheus.Handler())
 	c := cors.New(cors.Options{
 		AllowOriginFunc: func(origin string) bool {
 			return strings.Contains(origin, "codeloft") ||
