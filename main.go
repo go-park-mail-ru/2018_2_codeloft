@@ -104,7 +104,7 @@ func main() {
 	if os.Getenv("ENV") == "production" {
 		dbhost = "db"
 		authhost = "auth"
-		mongohost = "mongodb"
+		mongohost = "ds211774.mlab.com:11774"
 	}
 	zapLogger, err := logger.InitLogger()
 	if err != nil {
@@ -153,11 +153,11 @@ func main() {
 	mongoDb.DB_USERNAME = dbUserName
 	mongoDb.DB_PASSWORD = dbPassword
 	mongoDb.DB_NAME = databasename
-	mongoDb.DB_URL = fmt.Sprintf("mongodb://%s:%s@%s:27017/%s?authSource=%s", mongoDb.DB_USERNAME,
+	//mongodb://<dbuser>:<dbpassword>@ds211774.mlab.com:11774/codeloft
+	mongoDb.DB_URL = fmt.Sprintf("mongodb://%s:%s@%s/%s", mongoDb.DB_USERNAME,
 		mongoDb.DB_PASSWORD,
 		mongohost,
 		mongoDb.DB_NAME,
-		mongoDb.DB_USERNAME,
 	)
 	err = mongoDb.Connect()
 	if err != nil {
