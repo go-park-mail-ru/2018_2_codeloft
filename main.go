@@ -153,10 +153,11 @@ func main() {
 	mongoDb.DB_USERNAME = dbUserName
 	mongoDb.DB_PASSWORD = dbPassword
 	mongoDb.DB_NAME = databasename
-	mongoDb.DB_URL = fmt.Sprintf("mongodb://%s:%s@%s:27017/%s", mongoDb.DB_USERNAME,
+	mongoDb.DB_URL = fmt.Sprintf("mongodb://%s:%s@%s:27017/%s?authSource=%s", mongoDb.DB_USERNAME,
 		mongoDb.DB_PASSWORD,
 		mongohost,
 		mongoDb.DB_NAME,
+		mongoDb.DB_USERNAME,
 	)
 	err = mongoDb.Connect()
 	if err != nil {
