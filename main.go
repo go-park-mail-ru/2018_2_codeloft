@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strconv"
 
 	"log"
 	"net/http"
@@ -22,6 +23,32 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/cors"
 	"google.golang.org/grpc"
+)
+
+type statusWriter struct {
+	http.ResponseWriter
+	status int
+}
+
+func (w *statusWriter) WriteHeader(status int) {
+	w.status = status
+	w.ResponseWriter.WriteHeader(status)
+}
+
+func (w *statusWriter) Write(b []byte) (int, error) {
+	if w.status == 0 {
+		w.status = 200
+	}
+	n, err := w.ResponseWriter.Write(b)
+	return n, err
+}
+
+var httpReqs = prometheus.NewCounterVec(
+	prometheus.CounterOpts{
+		Name: "api_requests_total",
+		Help: "How many HTTP requests processed, partitioned by status code and HTTP method.",
+	},
+	[]string{"code", "method"},
 )
 
 var (
@@ -57,7 +84,9 @@ func logMiddleware(next http.Handler) http.Handler {
 			zap.String("Origin", r.Header.Get("Origin")),
 			zap.String("Remote addr", r.RemoteAddr),
 		)
-		next.ServeHTTP(w, r)
+		sw := statusWriter{ResponseWriter: w}
+		next.ServeHTTP(&sw, r)
+		httpReqs.WithLabelValues(strconv.Itoa(sw.status), r.Method).Inc()
 	})
 }
 
@@ -100,11 +129,7 @@ func AuthMiddleWare(next http.Handler, db *sql.DB, sm auth.AuthCheckerClient) ht
 }
 
 func main() {
-	opsQueued := prometheus.NewGauge(prometheus.GaugeOpts{
-		Name: "my_metric",
-		Help: "help to my metric",
-	})
-	prometheus.MustRegister(opsQueued)
+	prometheus.MustRegister(httpReqs)
 
 	if os.Getenv("ENV") == "production" {
 		dbhost = "db"
