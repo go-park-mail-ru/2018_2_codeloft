@@ -3,12 +3,13 @@ package game
 import (
 	"encoding/json"
 	"fmt"
-	gamemodels "github.com/go-park-mail-ru/2018_2_codeloft/game/models"
-	"github.com/gorilla/websocket"
-	"github.com/satori/go.uuid"
 	"log"
 	"time"
 	"unsafe"
+
+	gamemodels "github.com/go-park-mail-ru/2018_2_codeloft/game/models"
+	"github.com/gorilla/websocket"
+	"github.com/satori/go.uuid"
 )
 
 const (
@@ -123,6 +124,7 @@ func (r *Room) ListenToPlayers() {
 				r.Ticker.Stop()
 				game := GetGame()
 				delete(game.Rooms, r.ID)
+				RoomsCount.Dec()
 				log.Printf("Room %s was deleted", r.ID)
 			}
 			log.Printf("player was deleted from room %s", r.ID)

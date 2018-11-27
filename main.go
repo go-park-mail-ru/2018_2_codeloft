@@ -100,6 +100,12 @@ func AuthMiddleWare(next http.Handler, db *sql.DB, sm auth.AuthCheckerClient) ht
 }
 
 func main() {
+	opsQueued := prometheus.NewGauge(prometheus.GaugeOpts{
+		Name: "my_metric",
+		Help: "help to my metric",
+	})
+	prometheus.MustRegister(opsQueued)
+
 	if os.Getenv("ENV") == "production" {
 		dbhost = "db"
 		authhost = "auth"
