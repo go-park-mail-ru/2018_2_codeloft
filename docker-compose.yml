@@ -89,6 +89,18 @@ services:
     ports:
       - 5000:3000
     restart: always
+
+  game:
+    restart: always
+    build:
+      context: ./game
+      dockerfile: Dockerfile
+    ports:
+    - "8082:8082"
+    environment:
+      ENV: "production"
+    depends_on:
+    - auth
 #    networks:
 #    - backend
 #  mongodb:
