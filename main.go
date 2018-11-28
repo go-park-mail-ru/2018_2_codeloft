@@ -4,33 +4,59 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strconv"
 
-	"github.com/go-park-mail-ru/2018_2_codeloft/database"
-	"github.com/go-park-mail-ru/2018_2_codeloft/handlers"
-	"github.com/go-park-mail-ru/2018_2_codeloft/models"
 	"log"
 	"net/http"
 	"os"
 	"strings"
 
+	"github.com/go-park-mail-ru/2018_2_codeloft/database"
+	"github.com/go-park-mail-ru/2018_2_codeloft/handlers"
+	"github.com/go-park-mail-ru/2018_2_codeloft/models"
+
 	"go.uber.org/zap"
 
-	"github.com/go-park-mail-ru/2018_2_codeloft/logger"
-	"github.com/rs/cors"
 	"github.com/go-park-mail-ru/2018_2_codeloft/auth"
+	"github.com/go-park-mail-ru/2018_2_codeloft/logger"
 	_ "github.com/lib/pq"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/rs/cors"
 	"google.golang.org/grpc"
 )
 
+type statusWriter struct {
+	http.ResponseWriter
+	status int
+}
 
-var (
-	dbhost = "127.0.0.1"
-	authhost = "127.0.0.1"
-	mongohost = "127.0.0.1"
-	databasename = "codeloft"
+func (w *statusWriter) WriteHeader(status int) {
+	w.status = status
+	w.ResponseWriter.WriteHeader(status)
+}
+
+func (w *statusWriter) Write(b []byte) (int, error) {
+	if w.status == 0 {
+		w.status = 200
+	}
+	n, err := w.ResponseWriter.Write(b)
+	return n, err
+}
+
+var httpReqs = prometheus.NewCounterVec(
+	prometheus.CounterOpts{
+		Name: "api_requests_total",
+		Help: "How many HTTP requests processed, partitioned by status code and HTTP method.",
+	},
+	[]string{"code", "method"},
 )
 
-
+var (
+	dbhost       = "127.0.0.1"
+	authhost     = "127.0.0.1"
+	mongohost    = "127.0.0.1"
+	databasename = "codeloft"
+)
 
 func panicMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -58,7 +84,9 @@ func logMiddleware(next http.Handler) http.Handler {
 			zap.String("Origin", r.Header.Get("Origin")),
 			zap.String("Remote addr", r.RemoteAddr),
 		)
-		next.ServeHTTP(w, r)
+		sw := statusWriter{ResponseWriter: w}
+		next.ServeHTTP(&sw, r)
+		httpReqs.WithLabelValues(strconv.Itoa(sw.status), r.Method).Inc()
 	})
 }
 
@@ -101,6 +129,8 @@ func AuthMiddleWare(next http.Handler, db *sql.DB, sm auth.AuthCheckerClient) ht
 }
 
 func main() {
+	prometheus.MustRegister(httpReqs)
+
 	if os.Getenv("ENV") == "production" {
 		dbhost = "db"
 		authhost = "auth"
@@ -161,11 +191,11 @@ func main() {
 	)
 	err = mongoDb.Connect()
 	if err != nil {
-		log.Println("[ERROR] MognoConnection:",err)
+		log.Println("[ERROR] MognoConnection:", err)
 	}
 
 	grcpConn, err := grpc.Dial(
-		fmt.Sprintf("%s:8081",authhost),
+		fmt.Sprintf("%s:8081", authhost),
 		grpc.WithInsecure(),
 	)
 	if err != nil {
@@ -184,6 +214,7 @@ func main() {
 	//mux.Handle("/gamews", authHandler)
 	mux.Handle("/gamews", &handlers.GameHandler{db.DataBase})
 	mux.Handle("/chatws", &handlers.ChatHandler{mongoDb})
+	mux.Handle("/metrics", prometheus.Handler())
 	c := cors.New(cors.Options{
 		AllowOriginFunc: func(origin string) bool {
 			return strings.Contains(origin, "codeloft") ||
