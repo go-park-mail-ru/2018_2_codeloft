@@ -7,6 +7,7 @@ import (
 	"go.uber.org/zap"
 )
 
+//easyjson:json
 type User struct {
 	Id       int64  `json:"user_id"`
 	Login    string `json:"login"`

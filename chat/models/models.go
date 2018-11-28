@@ -9,6 +9,7 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
+//easyjson:json
 type Message struct {
 	Id            bson.ObjectId `bson:"_id,omitempty" json:"-"`
 	ChatId        int           `bson:"chat_id" json:"chat_id"`
