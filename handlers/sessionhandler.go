@@ -172,7 +172,7 @@ func signIn(w http.ResponseWriter, r *http.Request, db *sql.DB, sm auth.AuthChec
 			zap.Error(&err),
 		)
 
-		w.Write(generateError(models.MyError{r.URL.Path, "wrong password", fmt.Errorf("wrong password")}))
+		//w.Write(generateError(models.MyError{r.URL.Path, "wrong password", fmt.Errorf("wrong password")}))
 
 		return
 	}
@@ -209,7 +209,7 @@ func signIn(w http.ResponseWriter, r *http.Request, db *sql.DB, sm auth.AuthChec
 			zap.Error(&myErr),
 		)
 
-		w.Write(generateError(models.MyError{r.URL.Path, "Cant AddCookie", err}))
+		//w.Write(generateError(models.MyError{r.URL.Path, "Cant AddCookie", err}))
 
 		return
 	}

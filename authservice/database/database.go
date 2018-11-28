@@ -19,10 +19,10 @@ func (db *DB) ConnectDataBase() {
 	var dbInfo string
 	// Если есть DB_URL то мы используем его(для хероку)
 	host := "127.0.0.1"
-	if os.Getenv("ENV") == "production"{
+	if os.Getenv("ENV") == "production" {
 		host = "db"
 	}
-	db.DB_URL = fmt.Sprintf("postgresql://%s:%s@%s:5432/%s?sslmode=disable", db.DB_USERNAME, db.DB_PASSWORD, host,db.DB_NAME)
+	db.DB_URL = fmt.Sprintf("postgresql://%s:%s@%s:5432/%s?sslmode=disable", db.DB_USERNAME, db.DB_PASSWORD, host, db.DB_NAME)
 	if db.DB_URL != "" {
 		dbInfo = db.DB_URL
 	} else {

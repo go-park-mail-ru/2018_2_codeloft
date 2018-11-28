@@ -14,10 +14,9 @@ import (
 )
 
 var (
-	dbhost = "127.0.0.1"
+	dbhost   = "127.0.0.1"
 	authhost = "127.0.0.1"
 )
-
 
 func main() {
 	if os.Getenv("ENV") == "production" {

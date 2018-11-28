@@ -20,12 +20,12 @@ type DB struct {
 func (db *DB) ConnectDataBase() {
 	var dbInfo string
 	// Если есть DB_URL то мы используем его(для хероку)
-// postgresql://[user[:password]@][netloc][:port][/dbname][?param1=value1&...]
+	// postgresql://[user[:password]@][netloc][:port][/dbname][?param1=value1&...]
 	host := "127.0.0.1"
-	if os.Getenv("ENV") == "production"{
+	if os.Getenv("ENV") == "production" {
 		host = "db"
 	}
-	db.DB_URL = fmt.Sprintf("postgresql://%s:%s@%s:5432/%s?sslmode=disable", db.DB_USERNAME, db.DB_PASSWORD, host,db.DB_NAME)
+	db.DB_URL = fmt.Sprintf("postgresql://%s:%s@%s:5432/%s?sslmode=disable", db.DB_USERNAME, db.DB_PASSWORD, host, db.DB_NAME)
 	//db.DB_URL = fmt.Sprintf("postgresql://%s:%s@db/%s?sslmode=disable", db.DB_USERNAME, db.DB_PASSWORD,db.DB_NAME)
 	if db.DB_URL != "" {
 		dbInfo = db.DB_URL
@@ -42,7 +42,7 @@ func (db *DB) ConnectDataBase() {
 			zap.Error(err),
 		)
 	}
-	fmt.Println(db.DB_USERNAME, db.DB_PASSWORD,db.DB_NAME)
+	fmt.Println(db.DB_USERNAME, db.DB_PASSWORD, db.DB_NAME)
 	db.DataBase = database
 }
 
