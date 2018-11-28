@@ -5,15 +5,17 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"github.com/go-park-mail-ru/2018_2_codeloft/auth"
-	"github.com/go-park-mail-ru/2018_2_codeloft/models"
-	"github.com/go-park-mail-ru/2018_2_codeloft/validator"
-	"go.uber.org/zap"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"time"
+
+	"github.com/go-park-mail-ru/2018_2_codeloft/auth"
+	"github.com/go-park-mail-ru/2018_2_codeloft/models"
+	"github.com/go-park-mail-ru/2018_2_codeloft/validator"
+	"github.com/mailru/easyjson"
+	"go.uber.org/zap"
 )
 
 func checkAuth(w http.ResponseWriter, r *http.Request, db *sql.DB, sm auth.AuthCheckerClient) {
@@ -59,7 +61,7 @@ func checkAuth(w http.ResponseWriter, r *http.Request, db *sql.DB, sm auth.AuthC
 		)
 		return
 	}
-	res, err := json.Marshal(&user)
+	res, err := easyjson.Marshal(&user)
 	if err != nil {
 		zap.L().Info("error while Marshaling in /user",
 			zap.String("URL", r.URL.Path),
@@ -114,10 +116,8 @@ func signIn(w http.ResponseWriter, r *http.Request, db *sql.DB, sm auth.AuthChec
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	var u struct {
-		Login    string `json:"login"`
-		Password string `json:"password"`
-	}
+
+	u := models.HelpUser{}
 	err = json.Unmarshal(body, &u)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -214,7 +214,7 @@ func signIn(w http.ResponseWriter, r *http.Request, db *sql.DB, sm auth.AuthChec
 		return
 	}
 	http.SetCookie(w, cookie)
-	res, err := json.Marshal(&dbUser)
+	res, err := easyjson.Marshal(&dbUser)
 	if err != nil {
 		zap.L().Info("error while Marshaling",
 			zap.String("URL", r.URL.Path),

@@ -2,11 +2,12 @@ package game
 
 import (
 	"encoding/json"
+	"log"
+	"time"
+
 	gamemodels "github.com/go-park-mail-ru/2018_2_codeloft/game/game/models"
 	"github.com/gorilla/websocket"
 	"github.com/satori/go.uuid"
-	"log"
-	"time"
 )
 
 const (
@@ -64,17 +65,20 @@ type PlayerConn struct {
 	Signal string
 }
 
+//easyjson:json
 type IncomingMessage struct {
 	Type      string          `json:"type"`
 	Payload   json.RawMessage `json:"payload"`
 	PlayerCon *PlayerConn     `json:"-"`
 }
 
+//easyjson:json
 type OutMessage struct {
 	Type    string      `json:"type"`
 	Payload interface{} `json:"payload"`
 }
 
+//easyjson:json
 type State struct {
 	Players []gamemodels.Player `json:"players"`
 }

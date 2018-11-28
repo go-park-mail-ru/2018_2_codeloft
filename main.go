@@ -212,7 +212,7 @@ func main() {
 	mux.Handle("/session", &handlers.SessionHandler{db.DataBase, sessManager})
 	mux.Handle("/user/", &handlers.UserById{db.DataBase, sessManager})
 	//mux.Handle("/gamews", authHandler)
-	mux.Handle("/gamews", &handlers.GameHandler{db.DataBase})
+	//mux.Handle("/gamews", &handlers.GameHandler{db.DataBase})
 	mux.Handle("/chatws", &handlers.ChatHandler{mongoDb})
 	mux.Handle("/metrics", prometheus.Handler())
 	c := cors.New(cors.Options{

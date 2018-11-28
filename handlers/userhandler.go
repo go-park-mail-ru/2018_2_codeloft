@@ -5,15 +5,17 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"github.com/go-park-mail-ru/2018_2_codeloft/models"
-	"github.com/go-park-mail-ru/2018_2_codeloft/services"
-	"github.com/go-park-mail-ru/2018_2_codeloft/validator"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/go-park-mail-ru/2018_2_codeloft/models"
+	"github.com/go-park-mail-ru/2018_2_codeloft/services"
+	"github.com/go-park-mail-ru/2018_2_codeloft/validator"
+	"github.com/mailru/easyjson"
 
 	"github.com/go-park-mail-ru/2018_2_codeloft/auth"
 	"go.uber.org/zap"
@@ -129,12 +131,9 @@ func signUp(w http.ResponseWriter, r *http.Request, db *sql.DB, sm auth.AuthChec
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	var u struct {
-		Login    string `json:"login"`
-		Password string `json:"password"`
-		Email    string `json:"email"`
-	}
-	err = json.Unmarshal(body, &u)
+
+	u := models.HelpUser{}
+	err = easyjson.Unmarshal(body, &u)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write(generateError(models.MyError{r.URL.Path, "wrong request format", err}))
@@ -211,7 +210,7 @@ func signUp(w http.ResponseWriter, r *http.Request, db *sql.DB, sm auth.AuthChec
 			zap.Error(err),
 		)
 	}
-	res, err := json.Marshal(&user)
+	res, err := easyjson.Marshal(&user)
 	if err != nil {
 		zap.L().Info("error while Marshaling in /user",
 			zap.String("URL", r.URL.Path),
@@ -258,14 +257,9 @@ func updateUser(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	var u struct {
-		Login       string `json:"login"`
-		NewPassword string `json:"new_password,omitempty"`
-		Password    string `json:"password"`
-		Email       string `json:"email,omitempty"`
-		Score       int64  `json:"score,omitempty"`
-	}
-	err = json.Unmarshal(body, &u)
+
+	u := models.HelpUser{}
+	err = easyjson.Unmarshal(body, &u)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write(generateError(models.MyError{r.URL.Path, "wrong request format", err}))
