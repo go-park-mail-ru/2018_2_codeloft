@@ -2,11 +2,11 @@ package game
 
 import (
 	"encoding/json"
-	"log"
-	"time"
 	gamemodels "github.com/go-park-mail-ru/2018_2_codeloft/game/game/models"
 	"github.com/gorilla/websocket"
 	"github.com/satori/go.uuid"
+	"log"
+	"time"
 )
 
 const (
