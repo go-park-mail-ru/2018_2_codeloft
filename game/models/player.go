@@ -15,6 +15,7 @@ const (
 	DEFAULT_SPEED = 1 * scale / 10
 )
 
+//easyjson:/json
 type Position struct {
 	X int `json:"x"`
 	Y int `json:"y"`
@@ -34,6 +35,7 @@ func (p *Position) RandomPos() {
 	p.Y = r1.Intn(FIELD_HEIGHT)
 }
 
+//easyjson:json
 type Player struct {
 	Username      string     `json:"username"`
 	Position      Position   `json:"position"`

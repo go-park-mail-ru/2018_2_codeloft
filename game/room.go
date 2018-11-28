@@ -9,6 +9,7 @@ import (
 
 	gamemodels "github.com/go-park-mail-ru/2018_2_codeloft/game/models"
 	"github.com/gorilla/websocket"
+	"github.com/mailru/easyjson"
 	"github.com/satori/go.uuid"
 )
 
@@ -67,17 +68,20 @@ type PlayerConn struct {
 	Signal string
 }
 
+//easyjson:json
 type IncomingMessage struct {
 	Type      string          `json:"type"`
 	Payload   json.RawMessage `json:"payload"`
 	PlayerCon *PlayerConn     `json:"-"`
 }
 
+//easyjson:json
 type OutMessage struct {
 	Type    string      `json:"type"`
 	Payload interface{} `json:"payload"`
 }
 
+//easyjson:json
 type State struct {
 	Players []gamemodels.Player `json:"players"`
 }
@@ -210,7 +214,7 @@ func (r *Room) RunBroadcast() {
 }
 
 func (p *PlayerConn) Send(s *OutMessage) {
-	d, _ := json.Marshal(s)
+	d, _ := easyjson.Marshal(s)
 	fmt.Println(unsafe.Sizeof(d))
 	err := p.Conn.WriteJSON(s)
 	if err != nil {

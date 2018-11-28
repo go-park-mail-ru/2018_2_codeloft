@@ -40,8 +40,6 @@ func (p *UserConn) Listen() {
 			continue
 		}
 		m.Type = "user_message"
-		log.Println(m)
-		log.Println(globalChat.DataBase)
 		m.Add(globalChat.DataBase)
 		go SendMessage(m)
 	}
