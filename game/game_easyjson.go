@@ -54,7 +54,9 @@ func easyjson85f0d656DecodeGithubComGoParkMailRu20182CodeloftGame(in *jlexer.Lex
 				}
 				for !in.IsDelim(']') {
 					var v1 models.Player
-					easyjson85f0d656DecodeGithubComGoParkMailRu20182CodeloftGameModels(in, &v1)
+					if data := in.Raw(); in.Ok() {
+						in.AddError((v1).UnmarshalJSON(data))
+					}
 					out.Players = append(out.Players, v1)
 					in.WantComma()
 				}
@@ -90,7 +92,7 @@ func easyjson85f0d656EncodeGithubComGoParkMailRu20182CodeloftGame(out *jwriter.W
 				if v2 > 0 {
 					out.RawByte(',')
 				}
-				easyjson85f0d656EncodeGithubComGoParkMailRu20182CodeloftGameModels(out, v3)
+				out.Raw((v3).MarshalJSON())
 			}
 			out.RawByte(']')
 		}
@@ -120,184 +122,6 @@ func (v *State) UnmarshalJSON(data []byte) error {
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *State) UnmarshalEasyJSON(l *jlexer.Lexer) {
 	easyjson85f0d656DecodeGithubComGoParkMailRu20182CodeloftGame(l, v)
-}
-func easyjson85f0d656DecodeGithubComGoParkMailRu20182CodeloftGameModels(in *jlexer.Lexer, out *models.Player) {
-	isTopLevel := in.IsStart()
-	if in.IsNull() {
-		if isTopLevel {
-			in.Consumed()
-		}
-		in.Skip()
-		return
-	}
-	in.Delim('{')
-	for !in.IsDelim('}') {
-		key := in.UnsafeString()
-		in.WantColon()
-		if in.IsNull() {
-			in.Skip()
-			in.WantComma()
-			continue
-		}
-		switch key {
-		case "username":
-			out.Username = string(in.String())
-		case "position":
-			easyjson85f0d656DecodeGithubComGoParkMailRu20182CodeloftGameModels1(in, &out.Position)
-		case "speed":
-			out.Speed = int(in.Int())
-		case "move_direction":
-			out.MoveDirection = string(in.String())
-		case "score":
-			out.Score = int(in.Int())
-		case "id":
-			out.ID = int(in.Int())
-		case "is_dead":
-			out.IsDead = bool(in.Bool())
-		default:
-			in.SkipRecursive()
-		}
-		in.WantComma()
-	}
-	in.Delim('}')
-	if isTopLevel {
-		in.Consumed()
-	}
-}
-func easyjson85f0d656EncodeGithubComGoParkMailRu20182CodeloftGameModels(out *jwriter.Writer, in models.Player) {
-	out.RawByte('{')
-	first := true
-	_ = first
-	{
-		const prefix string = ",\"username\":"
-		if first {
-			first = false
-			out.RawString(prefix[1:])
-		} else {
-			out.RawString(prefix)
-		}
-		out.String(string(in.Username))
-	}
-	{
-		const prefix string = ",\"position\":"
-		if first {
-			first = false
-			out.RawString(prefix[1:])
-		} else {
-			out.RawString(prefix)
-		}
-		easyjson85f0d656EncodeGithubComGoParkMailRu20182CodeloftGameModels1(out, in.Position)
-	}
-	{
-		const prefix string = ",\"speed\":"
-		if first {
-			first = false
-			out.RawString(prefix[1:])
-		} else {
-			out.RawString(prefix)
-		}
-		out.Int(int(in.Speed))
-	}
-	{
-		const prefix string = ",\"move_direction\":"
-		if first {
-			first = false
-			out.RawString(prefix[1:])
-		} else {
-			out.RawString(prefix)
-		}
-		out.String(string(in.MoveDirection))
-	}
-	{
-		const prefix string = ",\"score\":"
-		if first {
-			first = false
-			out.RawString(prefix[1:])
-		} else {
-			out.RawString(prefix)
-		}
-		out.Int(int(in.Score))
-	}
-	{
-		const prefix string = ",\"id\":"
-		if first {
-			first = false
-			out.RawString(prefix[1:])
-		} else {
-			out.RawString(prefix)
-		}
-		out.Int(int(in.ID))
-	}
-	{
-		const prefix string = ",\"is_dead\":"
-		if first {
-			first = false
-			out.RawString(prefix[1:])
-		} else {
-			out.RawString(prefix)
-		}
-		out.Bool(bool(in.IsDead))
-	}
-	out.RawByte('}')
-}
-func easyjson85f0d656DecodeGithubComGoParkMailRu20182CodeloftGameModels1(in *jlexer.Lexer, out *models.Position) {
-	isTopLevel := in.IsStart()
-	if in.IsNull() {
-		if isTopLevel {
-			in.Consumed()
-		}
-		in.Skip()
-		return
-	}
-	in.Delim('{')
-	for !in.IsDelim('}') {
-		key := in.UnsafeString()
-		in.WantColon()
-		if in.IsNull() {
-			in.Skip()
-			in.WantComma()
-			continue
-		}
-		switch key {
-		case "x":
-			out.X = int(in.Int())
-		case "y":
-			out.Y = int(in.Int())
-		default:
-			in.SkipRecursive()
-		}
-		in.WantComma()
-	}
-	in.Delim('}')
-	if isTopLevel {
-		in.Consumed()
-	}
-}
-func easyjson85f0d656EncodeGithubComGoParkMailRu20182CodeloftGameModels1(out *jwriter.Writer, in models.Position) {
-	out.RawByte('{')
-	first := true
-	_ = first
-	{
-		const prefix string = ",\"x\":"
-		if first {
-			first = false
-			out.RawString(prefix[1:])
-		} else {
-			out.RawString(prefix)
-		}
-		out.Int(int(in.X))
-	}
-	{
-		const prefix string = ",\"y\":"
-		if first {
-			first = false
-			out.RawString(prefix[1:])
-		} else {
-			out.RawString(prefix)
-		}
-		out.Int(int(in.Y))
-	}
-	out.RawByte('}')
 }
 func easyjson85f0d656DecodeGithubComGoParkMailRu20182CodeloftGame1(in *jlexer.Lexer, out *OutMessage) {
 	isTopLevel := in.IsStart()

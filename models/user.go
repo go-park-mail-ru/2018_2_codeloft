@@ -16,6 +16,7 @@ type User struct {
 	Score    int64  `json:"score"`
 }
 
+//easyjson:json
 type Leaders struct {
 	Users      []User `json:"users"`
 	PagesCount int64  `json:"pagesCount"`

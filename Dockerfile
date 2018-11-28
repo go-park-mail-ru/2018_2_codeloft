@@ -61,6 +61,7 @@ ENV PASSWORD $PASSWORD
 
 # Установка golang
 ENV GOVER 1.10
+RUN apt-get update
 RUN apt-get install -y golang-$GOVER
 RUN apt-get install -y git
 

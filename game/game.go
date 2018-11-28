@@ -1,10 +1,11 @@
 package game
 
 import (
-	gamemodels "github.com/go-park-mail-ru/2018_2_codeloft/game/models"
-	"github.com/gorilla/websocket"
 	"log"
 	"sync"
+
+	gamemodels "github.com/go-park-mail-ru/2018_2_codeloft/game/models"
+	"github.com/gorilla/websocket"
 )
 
 const MAXROOMS = 5
