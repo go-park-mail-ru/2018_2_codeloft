@@ -46,7 +46,7 @@ func leaders(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 			zap.Error(&myError),
 		)
 
-		w.Write(generateError(models.MyError{r.URL.Path, "error while parsing form", err}))
+		//w.Write(generateError(models.MyError{r.URL.Path, "error while parsing form", err}))
 
 		return
 	}
@@ -517,6 +517,8 @@ func userDelete(w http.ResponseWriter, r *http.Request, db *sql.DB, sm auth.Auth
 			zap.String("User", user.Login),
 			zap.Error(err),
 		)
+		w.WriteHeader(http.StatusNotFound)
+		w.Write(generateError(models.MyError{r.URL.Path, "Cant del user", err}))
 	}
 	w.WriteHeader(http.StatusOK)
 }
