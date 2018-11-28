@@ -6,12 +6,17 @@ import (
 
 	gamemodels "github.com/go-park-mail-ru/2018_2_codeloft/game/models"
 	"github.com/gorilla/websocket"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 const MAXROOMS = 5
 
 var globalGame *Game
 var once sync.Once
+var RoomsCount = prometheus.NewGauge(prometheus.GaugeOpts{
+	Name: "game_rooms_count",
+	Help: "Count of rooms in game",
+})
 
 func GetGame() *Game {
 	once.Do(func() {
@@ -65,6 +70,7 @@ func (g *Game) FindRoom() *Room {
 	}
 
 	r := NewRoom()
+	RoomsCount.Inc()
 	go r.ListenToPlayers()
 	go r.Run()
 	g.Rooms[r.ID] = r

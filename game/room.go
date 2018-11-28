@@ -128,6 +128,7 @@ func (r *Room) ListenToPlayers() {
 				r.Ticker.Stop()
 				game := GetGame()
 				delete(game.Rooms, r.ID)
+				RoomsCount.Dec()
 				log.Printf("Room %s was deleted", r.ID)
 			}
 			log.Printf("player was deleted from room %s", r.ID)
