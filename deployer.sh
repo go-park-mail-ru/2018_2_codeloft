@@ -7,4 +7,4 @@ docker rm codeloft
 docker rmi codeloft
 docker tag codeloftbuild codeloft
 docker rmi codeloftbuild
-docker run -d -p 3000:8080 --name codeloft -t codeloft
+docker run -d -p 3000:8080 -p 8081:8081 --name codeloft -t codeloft

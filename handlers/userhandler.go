@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -14,7 +15,9 @@ import (
 	"github.com/go-park-mail-ru/2018_2_codeloft/models"
 	"github.com/go-park-mail-ru/2018_2_codeloft/services"
 	"github.com/go-park-mail-ru/2018_2_codeloft/validator"
+	"github.com/mailru/easyjson"
 
+	"github.com/go-park-mail-ru/2018_2_codeloft/auth"
 	"go.uber.org/zap"
 )
 
@@ -43,7 +46,7 @@ func leaders(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 			zap.Error(&myError),
 		)
 
-		w.Write(generateError(models.MyError{r.URL.Path, "error while parsing form", err}))
+		//w.Write(generateError(models.MyError{r.URL.Path, "error while parsing form", err}))
 
 		return
 	}
@@ -87,20 +90,34 @@ func leaders(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	if pageSize <= 0 {
 		pageSize = 5
 	}
-	slice := models.GetLeaders(db, page, pageSize)
-	resp, _ := json.Marshal(&slice)
+	lead := models.GetLeaders(db, page, pageSize)
+	resp, _ := json.Marshal(&lead)
 	w.WriteHeader(http.StatusOK)
 	w.Write(resp)
 	return
 }
 
-func signUp(w http.ResponseWriter, r *http.Request, db *sql.DB) {
-	var s *models.Session
-	if s = services.GetCookie(r, db); s != nil {
-		w.WriteHeader(http.StatusConflict)
-		return
+func signUp(w http.ResponseWriter, r *http.Request, db *sql.DB, sm auth.AuthCheckerClient) {
+	//var s *models.Session
+	//if s = services.GetCookie(r, db); s != nil {
+	//	w.WriteHeader(http.StatusConflict)
+	//	return
+	//}
+	//cooka, err := r.Cookie("session_id")
+	//if err == nil {
+	//	w.WriteHeader(http.StatusConflict)
+	//	log.Println("[ERROR] signUp Cookie exist.AlreadyAuth:", cooka.Value)
+	//	return
+	//}
+	cooka, err := r.Cookie("session_id")
+	if cooka != nil {
+		userid, err := sm.Check(context.Background(), &auth.SessionID{ID: cooka.Value})
+		if err == nil {
+			fmt.Println("[ERROR] signUp: Already auth.Need logout UserID:", userid.UserID)
+			w.WriteHeader(http.StatusConflict)
+			return
+		}
 	}
-
 	body, err := ioutil.ReadAll(r.Body)
 	defer r.Body.Close()
 	if err != nil {
@@ -114,12 +131,9 @@ func signUp(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	var u struct {
-		Login    string `json:"login"`
-		Password string `json:"password"`
-		Email    string `json:"email"`
-	}
-	err = json.Unmarshal(body, &u)
+
+	u := models.HelpUser{}
+	err = easyjson.Unmarshal(body, &u)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write(generateError(models.MyError{r.URL.Path, "wrong request format", err}))
@@ -196,7 +210,7 @@ func signUp(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 			zap.Error(err),
 		)
 	}
-	res, err := json.Marshal(&user)
+	res, err := easyjson.Marshal(&user)
 	if err != nil {
 		zap.L().Info("error while Marshaling in /user",
 			zap.String("URL", r.URL.Path),
@@ -243,14 +257,9 @@ func updateUser(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	var u struct {
-		Login       string `json:"login"`
-		NewPassword string `json:"new_password,omitempty"`
-		Password    string `json:"password"`
-		Email       string `json:"email,omitempty"`
-		Score       int64  `json:"score,omitempty"`
-	}
-	err = json.Unmarshal(body, &u)
+
+	u := models.HelpUser{}
+	err = easyjson.Unmarshal(body, &u)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write(generateError(models.MyError{r.URL.Path, "wrong request format", err}))
@@ -299,17 +308,16 @@ func updateUser(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		newScore = u.Score
 	}
 
-
 	newUser := models.User{user.Id, u.Login, newPassword, newEmail, newScore}
 	err = newUser.UpdateUser(db)
-  zap.L().Info("Can not update user",
-			zap.String("URL", r.URL.Path),
-			zap.String("Method", r.Method),
-			zap.String("Origin", r.Header.Get("Origin")),
-			zap.String("Remote addres", r.RemoteAddr),
-			zap.String("User", newUser.Login),
-			zap.Error(err),
-		)
+	zap.L().Info("Can not update user",
+		zap.String("URL", r.URL.Path),
+		zap.String("Method", r.Method),
+		zap.String("Origin", r.Header.Get("Origin")),
+		zap.String("Remote addres", r.RemoteAddr),
+		zap.String("User", newUser.Login),
+		zap.Error(err),
+	)
 	newUser.UpdateScore(db)
 
 	var result struct {
@@ -340,6 +348,7 @@ func updateUser(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 
 type UserHandler struct {
 	Db *sql.DB
+	Sm auth.AuthCheckerClient
 }
 
 func (h *UserHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -350,7 +359,7 @@ func (h *UserHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case http.MethodGet:
 		leaders(w, r, h.Db)
 	case http.MethodPost:
-		signUp(w, r, h.Db)
+		signUp(w, r, h.Db, h.Sm)
 	case http.MethodPut:
 		updateUser(w, r, h.Db)
 	default:
@@ -385,6 +394,7 @@ func (h *UserHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 type UserById struct {
 	Db *sql.DB
+	Sm auth.AuthCheckerClient
 }
 
 func userGet(w http.ResponseWriter, r *http.Request, db *sql.DB) {
@@ -424,7 +434,7 @@ func userGet(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	w.Write(user)
 }
 
-func userDelete(w http.ResponseWriter, r *http.Request, db *sql.DB) {
+func userDelete(w http.ResponseWriter, r *http.Request, db *sql.DB, sm auth.AuthCheckerClient) {
 	url := r.URL.Path
 	url = strings.Trim(url, "/user/")
 	id, err := strconv.ParseInt(url, 10, 64)
@@ -445,15 +455,27 @@ func userDelete(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	var s *models.Session
-
-	if s = services.GetCookie(r, db); s == nil {
+	//var s *models.Session
+	//
+	//if s = services.GetCookie(r, db); s == nil {
+	//	w.WriteHeader(http.StatusUnauthorized)
+	//	return
+	//}
+	cookie, err := r.Cookie("session_id")
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		log.Println("No cookie header with session_id name", err)
+		return
+	}
+	userid, err := sm.Check(context.Background(), &auth.SessionID{ID: cookie.Value})
+	if err != nil {
+		fmt.Println("[ERROR] checkAuth:", err)
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
-	if id != s.User_id {
+	if id != userid.UserID {
 		w.WriteHeader(http.StatusConflict)
-		w.Write(generateError(models.MyError{r.URL.Path, "user id != url id", fmt.Errorf("user_id = %d. url ud = %%d", s.User_id, id)}))
+		w.Write(generateError(models.MyError{r.URL.Path, "user id != url id", fmt.Errorf("user_id = %d. url ud = %%d", userid.UserID, id)}))
 		return
 	}
 
@@ -495,6 +517,8 @@ func userDelete(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 			zap.String("User", user.Login),
 			zap.Error(err),
 		)
+		w.WriteHeader(http.StatusNotFound)
+		w.Write(generateError(models.MyError{r.URL.Path, "Cant del user", err}))
 	}
 	w.WriteHeader(http.StatusOK)
 }
@@ -506,7 +530,7 @@ func (h *UserById) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case http.MethodGet:
 		userGet(w, r, h.Db)
 	case http.MethodDelete:
-		userDelete(w, r, h.Db)
+		userDelete(w, r, h.Db, h.Sm)
 	default:
 		w.WriteHeader(http.StatusMethodNotAllowed)
 	}
