@@ -6,15 +6,15 @@ import (
 )
 
 const (
-	COLOR_RED    = "ff2d00"
-	COLOR_BLUE   = "006cff"
-	COLOR_ORANGE = "ff9300"
-	COLOR_GREEN  = "32ff00"
-	COLOR_LIME   = "00fff3"
-	COLOR_YELLOW = "ffff00"
-	COLOR_WHITE  = "ffffff"
-	COLOR_VIOLET = "c908b4"
-	COLOR_BLACK  = "000000"
+	COLOR_RED    = "#ff2d00"
+	COLOR_BLUE   = "#006cff"
+	COLOR_ORANGE = "#ff9300"
+	COLOR_GREEN  = "#32ff00"
+	COLOR_LIME   = "#00fff3"
+	COLOR_YELLOW = "#ffff00"
+	COLOR_WHITE  = "#ffffff"
+	COLOR_VIOLET = "#c908b4"
+	COLOR_BLACK  = "#000000"
 )
 
 var colorMap = map[int]string{
