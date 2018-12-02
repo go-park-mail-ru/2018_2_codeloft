@@ -53,6 +53,18 @@ func (p *Player) ChangeDirection(direction string) {
 	if _, exist := Directions[direction]; !exist {
 		return
 	}
+	if p.MoveDirection == "DOWN" && direction == "UP" {
+		return
+	}
+	if p.MoveDirection == "UP" && direction == "DOWN" {
+		return
+	}
+	if p.MoveDirection == "RIGHT" && direction == "LEFT" {
+		return
+	}
+	if p.MoveDirection == "LEFT" && direction == "RIGHT" {
+		return
+	}
 	p.MoveDirection = direction
 }
 
