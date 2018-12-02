@@ -9,10 +9,10 @@ import (
 //const height = 180
 
 const (
-	scale         = 10
+	scale         = 5
 	FIELD_WIDTH   = 16 * scale
 	FIELD_HEIGHT  = 9 * scale
-	DEFAULT_SPEED = 1 * scale / 10
+	DEFAULT_SPEED = 100 //количество милисекунд до обновления координат игрока
 )
 
 //easyjson:/json
@@ -37,14 +37,16 @@ func (p *Position) RandomPos() {
 
 //easyjson:json
 type Player struct {
-	Username      string     `json:"username"`
-	Position      Position   `json:"position"`
-	Tracer        []Position `json:"-"`
-	Speed         int        `json:"speed"`
-	MoveDirection string     `json:"move_direction"`
-	Score         int        `json:"score"`
-	ID            int        `json:"id"`
-	IsDead        bool       `json:"is_dead, omitempty"`
+	Username      string       `json:"username"`
+	Position      Position     `json:"position"`
+	Tracer        []Position   `json:"-"`
+	SpeedTicker   *time.Ticker `json:"-"`
+	Speed         int          `json:"speed"`
+	MoveDirection string       `json:"move_direction"`
+	Score         int          `json:"score"`
+	ID            int          `json:"-"`
+	IsDead        bool         `json:"is_dead, omitempty"`
+	Color         string       `json:"color"`
 }
 
 func (p *Player) ChangeDirection(direction string) {
@@ -55,19 +57,21 @@ func (p *Player) ChangeDirection(direction string) {
 }
 
 func (p *Player) Move() {
-	p.Position.X += p.Speed * Directions[p.MoveDirection].X
-	p.Position.Y += p.Speed * Directions[p.MoveDirection].Y
+
+	p.Position.X += Directions[p.MoveDirection].X
+	p.Position.Y += Directions[p.MoveDirection].Y
 	if p.Position.X >= FIELD_WIDTH-1 {
-		p.Position.X = 1
+		p.Position.X = 0
 	}
 	if p.Position.Y >= FIELD_HEIGHT-1 {
-		p.Position.Y = 1
+		p.Position.Y = 0
 	}
 	if p.Position.X < 0 {
-		p.Position.X = FIELD_WIDTH - 2
+		p.Position.X = FIELD_WIDTH - 1
 	}
 	if p.Position.Y < 0 {
-		p.Position.Y = FIELD_HEIGHT - 2
+		p.Position.Y = FIELD_HEIGHT - 1
 	}
 	p.Tracer = append(p.Tracer, p.Position)
+
 }
