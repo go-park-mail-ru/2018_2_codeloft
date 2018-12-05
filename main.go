@@ -4,23 +4,57 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-
-	"github.com/go-park-mail-ru/2018_2_codeloft/database"
-	"github.com/go-park-mail-ru/2018_2_codeloft/handlers"
-	"github.com/go-park-mail-ru/2018_2_codeloft/models"
-	"github.com/go-park-mail-ru/2018_2_codeloft/services"
-
+	"strconv"
 	"log"
 	"net/http"
 	"os"
 	"strings"
 
+	"github.com/go-park-mail-ru/2018_2_codeloft/database"
+	"github.com/go-park-mail-ru/2018_2_codeloft/handlers"
+	"github.com/go-park-mail-ru/2018_2_codeloft/models"
+
 	"go.uber.org/zap"
 
+	"github.com/go-park-mail-ru/2018_2_codeloft/auth"
 	"github.com/go-park-mail-ru/2018_2_codeloft/logger"
-	"github.com/rs/cors"
-
 	_ "github.com/lib/pq"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/rs/cors"
+	"google.golang.org/grpc"
+)
+
+type statusWriter struct {
+	http.ResponseWriter
+	status int
+}
+
+func (w *statusWriter) WriteHeader(status int) {
+	w.status = status
+	w.ResponseWriter.WriteHeader(status)
+}
+
+func (w *statusWriter) Write(b []byte) (int, error) {
+	if w.status == 0 {
+		w.status = 200
+	}
+	n, err := w.ResponseWriter.Write(b)
+	return n, err
+}
+
+var httpReqs = prometheus.NewCounterVec(
+	prometheus.CounterOpts{
+		Name: "api_requests_total",
+		Help: "How many HTTP requests processed, partitioned by status code and HTTP method.",
+	},
+	[]string{"code", "method"},
+)
+
+var (
+	dbhost       = "127.0.0.1"
+	authhost     = "127.0.0.1"
+	mongohost    = "127.0.0.1"
+	databasename = "codeloft"
 )
 
 func panicMiddleware(next http.Handler) http.Handler {
@@ -49,24 +83,43 @@ func logMiddleware(next http.Handler) http.Handler {
 			zap.String("Origin", r.Header.Get("Origin")),
 			zap.String("Remote addr", r.RemoteAddr),
 		)
-		next.ServeHTTP(w, r)
+		sw := statusWriter{ResponseWriter: w}
+		next.ServeHTTP(&sw, r)
+		httpReqs.WithLabelValues(strconv.Itoa(sw.status), r.Method).Inc()
 	})
 }
 
-func AuthMiddleWare(next http.Handler, db *sql.DB) http.Handler {
+func AuthMiddleWare(next http.Handler, db *sql.DB, sm auth.AuthCheckerClient) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var s *models.Session
-		if s = services.GetCookie(r, db); s == nil {
+		//var s *models.Session
+		//if s = services.GetCookie(r, db); s == nil {
+		//	w.WriteHeader(http.StatusUnauthorized)
+		//	return
+		//}
+		//var user models.User
+		//if !user.GetUserByID(db, s.User_id) {
+		//	w.WriteHeader(http.StatusUnauthorized)
+		//	log.Println("User Does Not Exist in Users table, but exist in session", s.Value, s.User_id)
+		//	return
+		//}
+		cookie, err := r.Cookie("session_id")
+		if err != nil {
+			w.WriteHeader(http.StatusUnauthorized)
+			log.Println("No cookie header with session_id name", err)
+			return
+		}
+		userid, err := sm.Check(context.Background(), &auth.SessionID{ID: cookie.Value})
+		if err != nil {
+			fmt.Println("[ERROR] checkAuth:", err)
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
 		var user models.User
-		if !user.GetUserByID(db, s.User_id) {
+		if !user.GetUserByID(db, userid.UserID) {
 			w.WriteHeader(http.StatusUnauthorized)
-			log.Println("User Does Not Exist in Users table, but exist in session", s.Value, s.User_id)
+			log.Println("User Does Not Exist in Users table, but exist in session", cookie.Value, userid.UserID)
 			return
 		}
-
 		ctx := r.Context()
 		ctx = context.WithValue(ctx, "login", user.Login)
 		next.ServeHTTP(w, r.WithContext(ctx))
@@ -75,12 +128,21 @@ func AuthMiddleWare(next http.Handler, db *sql.DB) http.Handler {
 }
 
 func main() {
+	prometheus.MustRegister(httpReqs)
+
+	if os.Getenv("ENV") == "production" {
+		dbhost = "db"
+		authhost = "auth"
+		mongohost = "ds211774.mlab.com:11774"
+	}
 	zapLogger, err := logger.InitLogger()
 	if err != nil {
 		log.Fatalf("Can not initialize zap logger Error %v", err)
 	}
 	defer zapLogger.Sync()
 
+	dbUserName := ""
+	dbPassword := ""
 	db := &database.DB{}
 	if len(os.Args) < 3 {
 		fmt.Println("Usage ./2018_2_codeloft <username> <password>")
@@ -97,8 +159,10 @@ func main() {
 	} else {
 		db.DB_USERNAME = os.Args[1]
 		db.DB_PASSWORD = os.Args[2]
+		dbUserName = os.Args[1]
+		dbPassword = os.Args[2]
 	}
-	db.DB_NAME = "codeloft"
+	db.DB_NAME = databasename
 	db.DB_URL = os.Getenv("DATABASE_URL") // for heroku
 	db.ConnectDataBase()
 	defer db.DataBase.Close()
@@ -112,16 +176,45 @@ func main() {
 	//gameMux := http.NewServeMux()
 	//gameMux.Handle("/gamews", &handlers.GameHandler{db.DataBase})
 	//authHandler := AuthMiddleWare(gameMux, db.DataBase)
+
+	log.Println("Connecting to MongoDB:")
+	mongoDb := &database.MongoDB{}
+	mongoDb.DB_USERNAME = dbUserName
+	mongoDb.DB_PASSWORD = dbPassword
+	mongoDb.DB_NAME = databasename
+	//mongodb://<dbuser>:<dbpassword>@ds211774.mlab.com:11774/codeloft
+	mongoDb.DB_URL = fmt.Sprintf("mongodb://%s:%s@%s/%s", mongoDb.DB_USERNAME,
+		mongoDb.DB_PASSWORD,
+		mongohost,
+		mongoDb.DB_NAME,
+	)
+	err = mongoDb.Connect()
+	if err != nil {
+		log.Println("[ERROR] MognoConnection:", err)
+	}
+
+	grcpConn, err := grpc.Dial(
+		fmt.Sprintf("%s:8081", authhost),
+		grpc.WithInsecure(),
+	)
+	if err != nil {
+		log.Fatalf("cant connect to grpc")
+	}
+	defer grcpConn.Close()
+
+	sessManager := auth.NewAuthCheckerClient(grcpConn)
+
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/", handlers.MainPage)
-	mux.Handle("/user", &handlers.UserHandler{db.DataBase})
-	mux.Handle("/session", &handlers.SessionHandler{db.DataBase})
-	mux.Handle("/user/", &handlers.UserById{db.DataBase})
 	mux.Handle("/user/updateLang", &handlers.UserLang{db.DataBase})
-
+	mux.Handle("/user", &handlers.UserHandler{db.DataBase, sessManager})
+	mux.Handle("/session", &handlers.SessionHandler{db.DataBase, sessManager})
+	mux.Handle("/user/", &handlers.UserById{db.DataBase, sessManager})
 	//mux.Handle("/gamews", authHandler)
-	mux.Handle("/gamews", &handlers.GameHandler{db.DataBase})
+	//mux.Handle("/gamews", &handlers.GameHandler{db.DataBase})
+	mux.Handle("/chatws", &handlers.ChatHandler{mongoDb})
+	mux.Handle("/metrics", prometheus.Handler())
 	c := cors.New(cors.Options{
 		AllowOriginFunc: func(origin string) bool {
 			return strings.Contains(origin, "codeloft") ||
@@ -140,6 +233,11 @@ func main() {
 		zap.S().Infow("get port from env: ", port)
 	} else {
 		port = "8080"
+	}
+
+	if len(os.Args) > 3 {
+		port = os.Args[3]
+		fmt.Println(port)
 	}
 	addr := fmt.Sprintf(":%s", port)
 
