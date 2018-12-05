@@ -5,7 +5,8 @@ create table if not exists users (
   login citext unique ,
   password varchar(30),
   email varchar(30),
-  score bigint default 0
+  score bigint default 0,
+  lang varchar(2) default 'en'
 );
 
 create table if not exists sessions (

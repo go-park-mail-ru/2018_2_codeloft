@@ -308,7 +308,7 @@ func updateUser(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		newScore = u.Score
 	}
 
-	newUser := models.User{user.Id, u.Login, newPassword, newEmail, newScore}
+	newUser := models.User{user.Id, u.Login, newPassword, newEmail, newScore, user.Lang}
 	err = newUser.UpdateUser(db)
 	zap.L().Info("Can not update user",
 		zap.String("URL", r.URL.Path),
@@ -479,34 +479,6 @@ func userDelete(w http.ResponseWriter, r *http.Request, db *sql.DB, sm auth.Auth
 		return
 	}
 
-	// body, err := ioutil.ReadAll(r.Body)
-
-	// if err != nil {
-	// 	log.Println("error while reading body in /user")
-	// 	w.WriteHeader(http.StatusInternalServerError)
-	// 	return
-	// }
-	// var u struct {
-	// 	Login    string `json:"login"`
-	// 	Password string `json:"password"`
-	// }
-	// err = json.Unmarshal(body, &u)
-	// if err != nil {
-	// 	w.WriteHeader(http.StatusBadRequest)
-	// 	w.Write(generateError(models.MyError{r.URL.Path,"wrong request format",err}))
-	// 	return
-	// }
-	// err = validator.ValidateLogin(u.Login)
-	// if err != nil {
-	// 	w.WriteHeader(http.StatusBadRequest)
-	// 	w.Write(generateError(models.MyError{r.URL.Path,"bad login",err}))
-	// 	return
-	// }
-	// var user models.User
-	// if !user.GetUserByLogin(db, u.Login) {
-	// 	w.Write(generateError(models.MyError{r.URL.Path,"User does not exist",models.UserDoesNotExist(u.Login)}))
-	// 	return
-	// }
 	err = user.DeleteUser(db)
 	if err != nil {
 		zap.L().Warn("Can not delete user",
@@ -533,5 +505,67 @@ func (h *UserById) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		userDelete(w, r, h.Db, h.Sm)
 	default:
 		w.WriteHeader(http.StatusMethodNotAllowed)
+	}
+}
+
+type UserLang struct {
+	Db *sql.DB
+}
+
+func userUpdateLang(w http.ResponseWriter, r *http.Request, db *sql.DB) {
+	var session *models.Session
+	if session = services.GetCookie(r, db); session == nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	var lang struct {
+		Lang string `json:"lang"`
+	}
+
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		zap.S().Infow("Error in lang update", "err", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	err = json.Unmarshal(body, &lang)
+	if err != nil {
+		zap.S().Infow("Error in lang update", "err", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	user := models.User{}
+	if !user.GetUserByID(db, session.User_id) {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	err = validator.ValidateLang(lang.Lang)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		zap.S().Infow("Incorrect language", "lang", lang.Lang)
+		return
+	}
+	user.Lang = lang.Lang
+
+	err = user.UpdateLang(db)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		zap.S().Infow("Error in lang update", "err", err)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	body, err = json.Marshal(user)
+	w.Write(body)
+}
+
+func (h *UserLang) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("content-type", "application/json")
+	switch r.Method {
+	case http.MethodPost:
+		userUpdateLang(w, r, h.Db)
 	}
 }

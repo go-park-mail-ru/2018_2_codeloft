@@ -15,6 +15,7 @@ import (
 	"github.com/go-park-mail-ru/2018_2_codeloft/models"
 	"github.com/go-park-mail-ru/2018_2_codeloft/validator"
 	"github.com/mailru/easyjson"
+
 	"go.uber.org/zap"
 )
 
@@ -145,6 +146,7 @@ func signIn(w http.ResponseWriter, r *http.Request, db *sql.DB, sm auth.AuthChec
 		)
 		return
 	}
+
 	var dbUser models.User
 	if !dbUser.GetUserByLogin(db, u.Login) {
 		w.WriteHeader(http.StatusBadRequest)
