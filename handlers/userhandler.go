@@ -510,12 +510,39 @@ func (h *UserById) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 type UserLang struct {
 	Db *sql.DB
+	Sm auth.AuthCheckerClient
 }
 
-func userUpdateLang(w http.ResponseWriter, r *http.Request, db *sql.DB) {
-	var session *models.Session
-	if session = services.GetCookie(r, db); session == nil {
+func userUpdateLang(w http.ResponseWriter, r *http.Request, db *sql.DB, sm auth.AuthCheckerClient) {
+	//var session *models.Session
+	//if session = services.GetCookie(r, db); session == nil {
+	//	w.WriteHeader(http.StatusUnauthorized)
+	//	return
+	//}
+	cookie, err := r.Cookie("session_id")
+	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
+		log.Println("No cookie header with session_id name", err)
+		return
+	}
+	userid, err := sm.Check(context.Background(), &auth.SessionID{ID: cookie.Value})
+	if err != nil {
+		fmt.Println("[ERROR] checkAuth in userUpdateLang:", err)
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+	var user models.User
+	if !user.GetUserByID(db, userid.UserID) {
+		w.WriteHeader(http.StatusUnauthorized)
+		w.Write(generateError(models.MyError{r.URL.Path, "User Does Not Exist in Users table, but exist in session", fmt.Errorf("")}))
+		zap.L().Info("User Does Not Exist in Users table, but exist in session",
+			zap.String("URL", r.URL.Path),
+			zap.String("Method", r.Method),
+			zap.String("Origin", r.Header.Get("Origin")),
+			zap.String("Remote addres", r.RemoteAddr),
+			zap.String("Session value", cookie.Value),
+			zap.Int64("User id", userid.UserID),
+		)
 		return
 	}
 
@@ -537,11 +564,11 @@ func userUpdateLang(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		return
 	}
 
-	user := models.User{}
-	if !user.GetUserByID(db, session.User_id) {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
+	//user := models.User{}
+	//if !user.GetUserByID(db, session.User_id) {
+	//	w.WriteHeader(http.StatusBadRequest)
+	//	return
+	//}
 
 	err = validator.ValidateLang(lang.Lang)
 	if err != nil {
@@ -566,6 +593,6 @@ func (h *UserLang) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("content-type", "application/json")
 	switch r.Method {
 	case http.MethodPost:
-		userUpdateLang(w, r, h.Db)
+		userUpdateLang(w, r, h.Db, h.Sm)
 	}
 }

@@ -207,7 +207,7 @@ func main() {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/", handlers.MainPage)
-	mux.Handle("/user/updateLang", &handlers.UserLang{db.DataBase})
+	mux.Handle("/user/updateLang", &handlers.UserLang{db.DataBase, sessManager})
 	mux.Handle("/user", &handlers.UserHandler{db.DataBase, sessManager})
 	mux.Handle("/session", &handlers.SessionHandler{db.DataBase, sessManager})
 	mux.Handle("/user/", &handlers.UserById{db.DataBase, sessManager})
