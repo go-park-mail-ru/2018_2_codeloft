@@ -282,6 +282,7 @@ func (p *PlayerConn) MovePlayer() {
 		if p.Player.IsDead == true {
 			time.Sleep(5 * time.Second)
 			p.Player.IsDead = false
+			p.Player.Tracer = make([]gamemodels.Position, 0, 20)
 			p.Player.Position.RandomPos()
 			continue
 		}
