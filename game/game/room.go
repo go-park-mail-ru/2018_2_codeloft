@@ -146,7 +146,7 @@ func (r *Room) ListenToPlayers() {
 			}
 			p.Room.DiffAr.Lock()
 			if len(diffar.DiffArray) > 1 {
-				p.Room.DiffAr.DiffArray = append(p.Room.DiffAr.DiffArray, diffar.DiffArray[:len(diffar.DiffArray)-1]...)
+				p.Room.DiffAr.DiffArray = append(p.Room.DiffAr.DiffArray, diffar.DiffArray[:len(diffar.DiffArray)]...)
 			}
 			p.Room.DiffAr.Unlock()
 			p.Player.SpeedTicker.Stop()
