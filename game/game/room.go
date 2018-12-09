@@ -135,9 +135,18 @@ func (r *Room) ListenToPlayers() {
 			}
 
 		case p := <-r.Disconnects:
+			//for _, pos := range p.Player.Tracer {
+			//	r.Field[pos.Y][pos.X].Val = gamemodels.COLOR_BLACK
+			//}
+			diffar := Diff{}
+			diffar.DiffArray = make([]DiffCell, 0, len(p.Player.Tracer))
 			for _, pos := range p.Player.Tracer {
-				r.Field[pos.Y][pos.X].Val = gamemodels.COLOR_BLACK
+				p.Room.Field[pos.Y][pos.X].Val = gamemodels.COLOR_BLACK
+				diffar.DiffArray = append(diffar.DiffArray, DiffCell{Pos: pos, Val: gamemodels.COLOR_BLACK})
 			}
+			p.Room.DiffAr.Lock()
+			p.Room.DiffAr.DiffArray = append(p.Room.DiffAr.DiffArray, diffar.DiffArray[:len(diffar.DiffArray)-2]...)
+			p.Room.DiffAr.Unlock()
 			p.Player.SpeedTicker.Stop()
 			delete(r.Players, p.ID)
 			if len(r.Players) == 0 {
@@ -299,7 +308,7 @@ func (p *PlayerConn) MovePlayer() {
 				diffar.DiffArray = append(diffar.DiffArray, DiffCell{Pos: pos, Val: gamemodels.COLOR_BLACK})
 			}
 			p.Room.DiffAr.Lock()
-			p.Room.DiffAr.DiffArray = append(p.Room.DiffAr.DiffArray, diffar.DiffArray...)
+			p.Room.DiffAr.DiffArray = append(p.Room.DiffAr.DiffArray, diffar.DiffArray[:len(diffar.DiffArray)-2]...)
 			p.Room.DiffAr.Unlock()
 			p.Player.Position = gamemodels.Position{-1, -1}
 		}
