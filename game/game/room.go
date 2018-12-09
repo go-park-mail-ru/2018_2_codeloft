@@ -145,7 +145,9 @@ func (r *Room) ListenToPlayers() {
 				diffar.DiffArray = append(diffar.DiffArray, DiffCell{Pos: pos, Val: gamemodels.COLOR_BLACK})
 			}
 			p.Room.DiffAr.Lock()
-			p.Room.DiffAr.DiffArray = append(p.Room.DiffAr.DiffArray, diffar.DiffArray[:len(diffar.DiffArray)-2]...)
+			if len(diffar.DiffArray) > 1 {
+				p.Room.DiffAr.DiffArray = append(p.Room.DiffAr.DiffArray, diffar.DiffArray[:len(diffar.DiffArray)-1]...)
+			}
 			p.Room.DiffAr.Unlock()
 			p.Player.SpeedTicker.Stop()
 			delete(r.Players, p.ID)
@@ -308,7 +310,9 @@ func (p *PlayerConn) MovePlayer() {
 				diffar.DiffArray = append(diffar.DiffArray, DiffCell{Pos: pos, Val: gamemodels.COLOR_BLACK})
 			}
 			p.Room.DiffAr.Lock()
-			p.Room.DiffAr.DiffArray = append(p.Room.DiffAr.DiffArray, diffar.DiffArray[:len(diffar.DiffArray)-2]...)
+			if len(diffar.DiffArray) > 1 {
+				p.Room.DiffAr.DiffArray = append(p.Room.DiffAr.DiffArray, diffar.DiffArray[:len(diffar.DiffArray)-1]...)
+			}
 			p.Room.DiffAr.Unlock()
 			p.Player.Position = gamemodels.Position{-1, -1}
 		}
