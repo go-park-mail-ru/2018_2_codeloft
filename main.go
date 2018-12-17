@@ -208,6 +208,8 @@ func main() {
 
 	mux.HandleFunc("/", handlers.MainPage)
 	mux.Handle("/user/updateLang", &handlers.UserLang{db.DataBase, sessManager})
+	mux.Handle("/user/updateAvatar", &handlers.UserAvatar{db.DataBase, sessManager})
+	mux.Handle("/user/updateScore", &handlers.UserScore{db.DataBase, sessManager})
 	mux.Handle("/user", &handlers.UserHandler{db.DataBase, sessManager})
 	mux.Handle("/session", &handlers.SessionHandler{db.DataBase, sessManager})
 	mux.Handle("/user/", &handlers.UserById{db.DataBase, sessManager})

@@ -308,7 +308,7 @@ func updateUser(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		newScore = u.Score
 	}
 
-	newUser := models.User{user.Id, u.Login, newPassword, newEmail, newScore, user.Lang}
+	newUser := models.User{user.Id, u.Login, newPassword, newEmail, newScore, user.Lang, ""}
 	err = newUser.UpdateUser(db)
 	zap.L().Info("Can not update user",
 		zap.String("URL", r.URL.Path),
@@ -594,5 +594,101 @@ func (h *UserLang) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodPost:
 		userUpdateLang(w, r, h.Db, h.Sm)
+	}
+}
+
+type UserScore struct {
+	Db *sql.DB
+	Sm auth.AuthCheckerClient
+}
+
+func userUpdateScore(w http.ResponseWriter, r *http.Request, db *sql.DB, sm auth.AuthCheckerClient) {
+	//var session *models.Session
+	//if session = services.GetCookie(r, db); session == nil {
+	//	w.WriteHeader(http.StatusUnauthorized)
+	//	return
+	//}
+	cookie, err := r.Cookie("session_id")
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		log.Println("No cookie header with session_id name", err)
+		return
+	}
+	userid, err := sm.Check(context.Background(), &auth.SessionID{ID: cookie.Value})
+	if err != nil {
+		fmt.Println("[ERROR] checkAuth in userUpdateLang:", err)
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+	var user models.User
+	if !user.GetUserByID(db, userid.UserID) {
+		w.WriteHeader(http.StatusUnauthorized)
+		w.Write(generateError(models.MyError{r.URL.Path, "User Does Not Exist in Users table, but exist in session", fmt.Errorf("")}))
+		zap.L().Info("User Does Not Exist in Users table, but exist in session",
+			zap.String("URL", r.URL.Path),
+			zap.String("Method", r.Method),
+			zap.String("Origin", r.Header.Get("Origin")),
+			zap.String("Remote addres", r.RemoteAddr),
+			zap.String("Session value", cookie.Value),
+			zap.Int64("User id", userid.UserID),
+		)
+		return
+	}
+
+	var score struct {
+		Score string `json:"score"`
+	}
+
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		zap.S().Infow("Error in score update", "err", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	err = json.Unmarshal(body, &score)
+	if err != nil {
+		zap.S().Infow("Error in score update", "err", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	//user := models.User{}
+	//if !user.GetUserByID(db, session.User_id) {
+	//	w.WriteHeader(http.StatusBadRequest)
+	//	return
+	//}
+
+	sc, err := strconv.ParseInt(score.Score, 10, 64)
+	if err != nil {
+		zap.L().Info("Convert Error. Bad Score",
+			zap.String("URL", r.URL.Path),
+			zap.String("Method", r.Method),
+			zap.String("Origin", r.Header.Get("Origin")),
+			zap.String("Remote addres", r.RemoteAddr),
+			zap.Error(err),
+		)
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write(generateError(models.MyError{r.URL.Path, "Bad URL", err}))
+		return
+	}
+	user.Score = sc
+
+	err = user.UpdateScore(db)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		zap.S().Infow("Error in lang update", "err", err)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	body, err = json.Marshal(user)
+	w.Write(body)
+}
+
+func (h *UserScore) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("content-type", "application/json")
+	switch r.Method {
+	case http.MethodPost:
+		userUpdateScore(w, r, h.Db, h.Sm)
 	}
 }

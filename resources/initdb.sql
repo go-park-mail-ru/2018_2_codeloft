@@ -1,12 +1,16 @@
 CREATE EXTENSION  IF NOT EXISTS citext;
 
+drop table if exists sessions;
+drop table if exists users;
+
 create table if not exists users (
   id bigserial not null primary key,
   login citext unique ,
   password varchar(30),
   email varchar(30),
   score bigint default 0,
-  lang varchar(2) default 'en'
+  lang varchar(2) default 'en',
+  avatar varchar(30) default 'defaultimg.jpeg'
 );
 
 create table if not exists sessions (
