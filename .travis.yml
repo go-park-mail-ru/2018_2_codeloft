@@ -22,7 +22,7 @@ script:
   - go test -v
   - go get -u github.com/alecthomas/gometalinter
   - gometalinter --install
-  - gometalinter --vendor --errors ./...
+  - gometalinter ./...
 
 deploy:
   provider: heroku
