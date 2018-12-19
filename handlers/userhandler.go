@@ -32,6 +32,7 @@ func generateError(err models.MyError) []byte {
 }
 
 func leaders(w http.ResponseWriter, r *http.Request, db *sql.DB) {
+	w.Header().Add("XXX_VAASYA", "TAX")
 	err := r.ParseForm()
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
