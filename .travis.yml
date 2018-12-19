@@ -10,7 +10,7 @@ go_import_path: github.com/go-park-mail-ru/2018_2_codeloft
 branches:
   only:
     - master
-    - testing
+
 
 services:
   - docker
