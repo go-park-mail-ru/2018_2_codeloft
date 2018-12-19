@@ -51,7 +51,7 @@ func checkAuth(w http.ResponseWriter, r *http.Request, db *sql.DB, sm auth.AuthC
 	var user models.User
 	if !user.GetUserByID(db, userid.UserID) {
 		w.WriteHeader(http.StatusUnauthorized)
-		w.Write(generateError(models.MyError{r.URL.Path, "User Does Not Exist in Users table, but exist in session", fmt.Errorf("")}))
+		w.Write(generateError(models.MyError{URL: r.URL.Path, What: "User Does Not Exist in Users table, but exist in session", Err: fmt.Errorf("")}))
 		zap.L().Info("User Does Not Exist in Users table, but exist in session",
 			zap.String("URL", r.URL.Path),
 			zap.String("Method", r.Method),
@@ -122,7 +122,7 @@ func signIn(w http.ResponseWriter, r *http.Request, db *sql.DB, sm auth.AuthChec
 	err = json.Unmarshal(body, &u)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write(generateError(models.MyError{r.URL.Path, "wrong requst format", err}))
+		w.Write(generateError(models.MyError{URL: r.URL.Path, What: "wrong requst format", Err: err}))
 		zap.L().Info("error while Marshaling in /session",
 			zap.String("URL", r.URL.Path),
 			zap.String("Method", r.Method),
@@ -136,7 +136,7 @@ func signIn(w http.ResponseWriter, r *http.Request, db *sql.DB, sm auth.AuthChec
 	err = validator.ValidateLogin(u.Login)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write(generateError(models.MyError{r.URL.Path, "bad login", err}))
+		w.Write(generateError(models.MyError{URL: r.URL.Path, What: "bad login", Err: err}))
 		zap.L().Info("error while validating in /session",
 			zap.String("URL", r.URL.Path),
 			zap.String("Method", r.Method),
@@ -150,7 +150,7 @@ func signIn(w http.ResponseWriter, r *http.Request, db *sql.DB, sm auth.AuthChec
 	var dbUser models.User
 	if !dbUser.GetUserByLogin(db, u.Login) {
 		w.WriteHeader(http.StatusBadRequest)
-		err := models.MyError{r.URL.Path, "User does not exist", models.UserDoesNotExist(u.Login)}
+		err := models.MyError{URL: r.URL.Path, What: "User does not exist", Err: models.UserDoesNotExist(u.Login)}
 		w.Write(generateError(err))
 		zap.L().Info("User does not exist",
 			zap.String("URL", r.URL.Path),
@@ -164,7 +164,7 @@ func signIn(w http.ResponseWriter, r *http.Request, db *sql.DB, sm auth.AuthChec
 	if dbUser.Password != u.Password {
 		w.WriteHeader(http.StatusBadRequest)
 
-		err := models.MyError{r.URL.Path, "wrong password", fmt.Errorf("wrong password")}
+		err := models.MyError{URL: r.URL.Path, What: "wrong password", Err: fmt.Errorf("wrong password")}
 		w.Write(generateError(err))
 		zap.L().Info("Wrong password",
 			zap.String("URL", r.URL.Path),
@@ -201,7 +201,7 @@ func signIn(w http.ResponseWriter, r *http.Request, db *sql.DB, sm auth.AuthChec
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 
-		myErr := models.MyError{r.URL.Path, "Cant AddCookie", err}
+		myErr := models.MyError{URL: r.URL.Path, What: "Cant AddCookie", Err: err}
 		w.Write(generateError(myErr))
 		zap.L().Info("Cant AddCookie",
 			zap.String("URL", r.URL.Path),

@@ -4,14 +4,15 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"github.com/go-park-mail-ru/2018_2_codeloft/auth"
-	"github.com/go-park-mail-ru/2018_2_codeloft/models"
-	"github.com/satori/go.uuid"
-	"go.uber.org/zap"
 	"io/ioutil"
 	"log"
 	"mime/multipart"
 	"net/http"
+
+	"github.com/go-park-mail-ru/2018_2_codeloft/auth"
+	"github.com/go-park-mail-ru/2018_2_codeloft/models"
+	"github.com/satori/go.uuid"
+	"go.uber.org/zap"
 )
 
 const uploadPath = "/var/www/avatars/"
@@ -42,7 +43,7 @@ func userUpdateAvatar(w http.ResponseWriter, r *http.Request, db *sql.DB, sm aut
 	var user models.User
 	if !user.GetUserByID(db, userid.UserID) {
 		w.WriteHeader(http.StatusUnauthorized)
-		w.Write(generateError(models.MyError{r.URL.Path, "User Does Not Exist in Users table, but exist in session", fmt.Errorf("")}))
+		w.Write(generateError(models.MyError{URL: r.URL.Path, What: "User Does Not Exist in Users table, but exist in session", Err: fmt.Errorf("")}))
 		zap.L().Info("User Does Not Exist in Users table, but exist in session",
 			zap.String("URL", r.URL.Path),
 			zap.String("Method", r.Method),

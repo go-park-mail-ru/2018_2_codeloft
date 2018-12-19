@@ -3,11 +3,12 @@ package game
 import (
 	"encoding/json"
 	"fmt"
+	"log"
+	"time"
+
 	gamemodels "github.com/go-park-mail-ru/2018_2_codeloft/game/game/models"
 	"github.com/gorilla/websocket"
 	"github.com/satori/go.uuid"
-	"log"
-	"time"
 )
 
 const (
@@ -216,7 +217,7 @@ func (r *Room) MovePlayers() {
 			for _, pos := range p.Player.Tracer {
 				r.Field[pos.Y][pos.X].Val = gamemodels.COLOR_BLACK
 			}
-			p.Player.Position = gamemodels.Position{-1, -1}
+			p.Player.Position = gamemodels.Position{X: -1, Y: -1}
 		}
 		//r.Field[p.Player.Position.Y][p.Player.Position.X].Mu.Unlock()
 	}
@@ -259,7 +260,7 @@ func (p *PlayerConn) Send(s *OutMessage) {
 }
 
 func (p *PlayerConn) Listen() {
-	log.Printf("start listening messages from player %s", p.ID)
+	log.Printf("start listening messages from player %d", p.ID)
 
 	initMessage := &IncomingMessage{"connect_player", json.RawMessage{}, p}
 	p.Room.Message <- initMessage
@@ -314,7 +315,7 @@ func (p *PlayerConn) MovePlayer() {
 				p.Room.DiffAr.DiffArray = append(p.Room.DiffAr.DiffArray, diffar.DiffArray[:len(diffar.DiffArray)-1]...)
 			}
 			p.Room.DiffAr.Unlock()
-			p.Player.Position = gamemodels.Position{-1, -1}
+			p.Player.Position = gamemodels.Position{X: -1, Y: -1}
 		}
 	}
 }

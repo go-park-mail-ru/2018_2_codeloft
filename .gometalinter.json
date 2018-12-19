@@ -1,4 +1,5 @@
 {
     "Vendor": true,
-    "Errors": true
+    "Errors": true,
+    "Deadline": "15m"
 }

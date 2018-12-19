@@ -1,13 +1,9 @@
 package models
 
-import (
-	"sync"
-)
-
 //easyjson:json
 type Cell struct {
-	Val string     `json:"color"`
-	Mu  sync.Mutex `json:"-"`
+	Val string `json:"color"`
+	//Mu  sync.Mutex `json:"-"`
 }
 
 type FieldSize Position
