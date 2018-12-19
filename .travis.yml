@@ -20,7 +20,9 @@ before_install:
 
 script:
   - go test -v
-
+  - go get -u github.com/alecthomas/gometalinter
+  - gometalinter .
+  
 deploy:
   provider: heroku
   api_key: $heroku_api
