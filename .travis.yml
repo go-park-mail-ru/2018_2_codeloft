@@ -21,7 +21,7 @@ services:
 
 before_install:
   - docker build --build-arg USERNAME=$USERNAME --build-arg PASSWORD=$PASSWORD .
-  - chmod +x to_machine_deploy.sh
+  - chmod +x ./to_machine_deploy.sh
 
 script:
   - go test -v
