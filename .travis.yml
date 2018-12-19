@@ -28,9 +28,3 @@ after_success:
   - chmod +x ./to_machine_deploy.sh
   - if [ "$TRAVIS_BRANCH" = "master" ]; then ./to_machine_deploy.sh master; fi
   - if [ "$TRAVIS_BRANCH" = "testing" ]; then ./to_machine_deploy.sh testing; fi
-deploy:
-  provider: heroku
-  api_key: $heroku_api
-  app: codeloft
-  on:
-    all_branches: true
