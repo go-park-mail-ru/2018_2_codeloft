@@ -10,7 +10,11 @@ go_import_path: github.com/go-park-mail-ru/2018_2_codeloft
 branches:
   only:
     - master
-
+    - testing
+addons:
+  apt:
+    packages:
+      - sshpass
 
 services:
   - docker
@@ -24,6 +28,9 @@ script:
   - gometalinter --install
   - gometalinter ./...
 
-after_success:
-  - chmod +x ./to_machine_deploy.sh
-  - ./to_machine_deploy.sh
+deploy: 
+  provider: script
+  script: to_machine_deploy.sh
+  on:
+    all_branches: true
+    condition: $TRAVIS_BRANCH =~ ^testing|master$
