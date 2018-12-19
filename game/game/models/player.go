@@ -45,7 +45,7 @@ type Player struct {
 	MoveDirection string       `json:"move_direction"`
 	Score         int          `json:"score"`
 	ID            int          `json:"-"`
-	IsDead        bool         `json:"is_dead, omitempty"`
+	IsDead        bool         `json:"is_dead,omitempty"`
 	Color         string       `json:"color"`
 }
 

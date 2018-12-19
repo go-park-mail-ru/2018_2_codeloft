@@ -36,7 +36,7 @@ func leaders(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 
-		myError := models.MyError{r.URL.Path, "error while parsing form", err}
+		myError := models.MyError{URL: r.URL.Path, What: "error while parsing form", Err: err}
 		w.Write(generateError(myError))
 		zap.L().Info("Parsing error in leaders",
 			zap.String("URL", r.URL.Path),
@@ -62,7 +62,7 @@ func leaders(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 			paramReturn, err = strconv.Atoi(r.FormValue(param))
 			if err != nil {
 				w.WriteHeader(http.StatusBadRequest)
-				w.Write(generateError(models.MyError{r.URL.Path, "Bad params", err}))
+				w.Write(generateError(models.MyError{URL: r.URL.Path, What: "Bad params", Err: err}))
 
 				zap.L().Info("Bad params",
 					zap.String("URL", r.URL.Path),
@@ -136,7 +136,7 @@ func signUp(w http.ResponseWriter, r *http.Request, db *sql.DB, sm auth.AuthChec
 	err = easyjson.Unmarshal(body, &u)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write(generateError(models.MyError{r.URL.Path, "wrong request format", err}))
+		w.Write(generateError(models.MyError{URL: r.URL.Path, What: "wrong request format", Err: err}))
 
 		zap.L().Info("wrong request format",
 			zap.String("URL", r.URL.Path),
@@ -151,13 +151,13 @@ func signUp(w http.ResponseWriter, r *http.Request, db *sql.DB, sm auth.AuthChec
 	var user models.User
 	if exist := user.GetUserByLogin(db, u.Login); exist {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write(generateError(models.MyError{r.URL.Path, "User already exist", fmt.Errorf("")}))
+		w.Write(generateError(models.MyError{URL: r.URL.Path, What: "User already exist", Err: fmt.Errorf("")}))
 		return
 	}
 	err = validator.ValidateEmail(u.Email)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write(generateError(models.MyError{r.URL.Path, "bad email", err}))
+		w.Write(generateError(models.MyError{URL: r.URL.Path, What: "bad email", Err: err}))
 
 		zap.L().Info("bad email",
 			zap.String("URL", r.URL.Path),
@@ -172,7 +172,7 @@ func signUp(w http.ResponseWriter, r *http.Request, db *sql.DB, sm auth.AuthChec
 	err = validator.ValidateLogin(u.Login)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write(generateError(models.MyError{r.URL.Path, "bad login", err}))
+		w.Write(generateError(models.MyError{URL: r.URL.Path, What: "bad login", Err: err}))
 
 		zap.L().Info("bad login",
 			zap.String("URL", r.URL.Path),
@@ -187,7 +187,7 @@ func signUp(w http.ResponseWriter, r *http.Request, db *sql.DB, sm auth.AuthChec
 	err = validator.ValidatePassword(u.Password)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write(generateError(models.MyError{r.URL.Path, "bad password", err}))
+		w.Write(generateError(models.MyError{URL: r.URL.Path, What: "bad password", Err: err}))
 
 		zap.L().Info("bad password",
 			zap.String("URL", r.URL.Path),
@@ -227,7 +227,7 @@ func signUp(w http.ResponseWriter, r *http.Request, db *sql.DB, sm auth.AuthChec
 	if os.Getenv("ENV") == "production" {
 		cookie.Secure = true
 	}
-	session := models.Session{cookie.Value, user.Id}
+	session := models.Session{Value: cookie.Value, User_id: user.Id}
 	session.AddCookie(db)
 	http.SetCookie(w, cookie)
 
@@ -238,7 +238,7 @@ func updateUser(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	_, err := r.Cookie("session_id")
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
-		w.Write(generateError(models.MyError{r.URL.Path, "authorization required", err}))
+		w.Write(generateError(models.MyError{URL: r.URL.Path, What: "authorization required", Err: err}))
 		return
 	}
 
@@ -262,37 +262,37 @@ func updateUser(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	err = easyjson.Unmarshal(body, &u)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write(generateError(models.MyError{r.URL.Path, "wrong request format", err}))
+		w.Write(generateError(models.MyError{URL: r.URL.Path, What: "wrong request format", Err: err}))
 		return
 	}
 	err = validator.ValidateLogin(u.Login)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write(generateError(models.MyError{r.URL.Path, "bad login", err}))
+		w.Write(generateError(models.MyError{URL: r.URL.Path, What: "bad login", Err: err}))
 		return
 	}
 	var user models.User
 	if !user.GetUserByLogin(db, u.Login) {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write(generateError(models.MyError{r.URL.Path, "User does not exist", err}))
+		w.Write(generateError(models.MyError{URL: r.URL.Path, What: "User does not exist", Err: err}))
 		return
 	}
 
 	if user.Password != u.Password {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write(generateError(models.MyError{r.URL.Path, "wrong password", fmt.Errorf("")}))
+		w.Write(generateError(models.MyError{URL: r.URL.Path, What: "wrong password", Err: fmt.Errorf("")}))
 		return
 	}
 	var newPassword string = user.Password
 	var newEmail string = user.Email
-	var newScore int64 = 0
+	var newScore int64
 	if u.NewPassword != "" {
 		newPassword = u.NewPassword
 	}
 	err = validator.ValidatePassword(newPassword)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write(generateError(models.MyError{r.URL.Path, "bad New password", err}))
+		w.Write(generateError(models.MyError{URL: r.URL.Path, What: "bad New password", Err: err}))
 		return
 	}
 	if u.Email != "" {
@@ -301,14 +301,14 @@ func updateUser(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	err = validator.ValidateEmail(newEmail)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write(generateError(models.MyError{r.URL.Path, "bad New email", err}))
+		w.Write(generateError(models.MyError{URL: r.URL.Path, What: "bad New email", Err: err}))
 		return
 	}
 	if u.Score != 0 {
 		newScore = u.Score
 	}
 
-	newUser := models.User{user.Id, u.Login, newPassword, newEmail, newScore, user.Lang, ""}
+	newUser := models.User{Id: user.Id, Login: u.Login, Password: newPassword, Email: newEmail, Score: newScore, Lang: user.Lang, Avatar: ""}
 	err = newUser.UpdateUser(db)
 	zap.L().Info("Can not update user",
 		zap.String("URL", r.URL.Path),
@@ -346,6 +346,7 @@ func updateUser(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	w.Write(res)
 }
 
+// UserHandler handler for api/user
 type UserHandler struct {
 	Db *sql.DB
 	Sm auth.AuthCheckerClient
@@ -392,6 +393,7 @@ func (h *UserHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 //	w.Write(user)
 //}
 
+// UserById handler for api requests with user id
 type UserById struct {
 	Db *sql.DB
 	Sm auth.AuthCheckerClient
@@ -410,7 +412,7 @@ func userGet(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 			zap.Error(err),
 		)
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write(generateError(models.MyError{r.URL.Path, "Bad URL", err}))
+		w.Write(generateError(models.MyError{URL: r.URL.Path, What: "Bad URL", Err: err}))
 		return
 	}
 	var u models.User
@@ -447,7 +449,7 @@ func userDelete(w http.ResponseWriter, r *http.Request, db *sql.DB, sm auth.Auth
 			zap.Error(err),
 		)
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write(generateError(models.MyError{r.URL.Path, "Bad URL", err}))
+		w.Write(generateError(models.MyError{URL: r.URL.Path, What: "Bad URL", Err: err}))
 		return
 	}
 	user := &models.User{}
@@ -475,7 +477,7 @@ func userDelete(w http.ResponseWriter, r *http.Request, db *sql.DB, sm auth.Auth
 	}
 	if id != userid.UserID {
 		w.WriteHeader(http.StatusConflict)
-		w.Write(generateError(models.MyError{r.URL.Path, "user id != url id", fmt.Errorf("user_id = %d. url ud = %%d", userid.UserID, id)}))
+		w.Write(generateError(models.MyError{URL: r.URL.Path, What: "user id != url id", Err: fmt.Errorf("user_id = %d. url ud = %d", userid.UserID, id)}))
 		return
 	}
 
@@ -490,7 +492,7 @@ func userDelete(w http.ResponseWriter, r *http.Request, db *sql.DB, sm auth.Auth
 			zap.Error(err),
 		)
 		w.WriteHeader(http.StatusNotFound)
-		w.Write(generateError(models.MyError{r.URL.Path, "Cant del user", err}))
+		w.Write(generateError(models.MyError{URL: r.URL.Path, What: "Cant del user", Err: err}))
 	}
 	w.WriteHeader(http.StatusOK)
 }
@@ -508,6 +510,7 @@ func (h *UserById) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// UserLang is handler for changing language of user
 type UserLang struct {
 	Db *sql.DB
 	Sm auth.AuthCheckerClient
@@ -534,7 +537,7 @@ func userUpdateLang(w http.ResponseWriter, r *http.Request, db *sql.DB, sm auth.
 	var user models.User
 	if !user.GetUserByID(db, userid.UserID) {
 		w.WriteHeader(http.StatusUnauthorized)
-		w.Write(generateError(models.MyError{r.URL.Path, "User Does Not Exist in Users table, but exist in session", fmt.Errorf("")}))
+		w.Write(generateError(models.MyError{URL: r.URL.Path, What: "User Does Not Exist in Users table, but exist in session", Err: fmt.Errorf("")}))
 		zap.L().Info("User Does Not Exist in Users table, but exist in session",
 			zap.String("URL", r.URL.Path),
 			zap.String("Method", r.Method),
@@ -597,6 +600,7 @@ func (h *UserLang) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// UserScore is handler for changing score
 type UserScore struct {
 	Db *sql.DB
 	Sm auth.AuthCheckerClient
@@ -623,7 +627,7 @@ func userUpdateScore(w http.ResponseWriter, r *http.Request, db *sql.DB, sm auth
 	var user models.User
 	if !user.GetUserByID(db, userid.UserID) {
 		w.WriteHeader(http.StatusUnauthorized)
-		w.Write(generateError(models.MyError{r.URL.Path, "User Does Not Exist in Users table, but exist in session", fmt.Errorf("")}))
+		w.Write(generateError(models.MyError{URL: r.URL.Path, What: "User Does Not Exist in Users table, but exist in session", Err: fmt.Errorf("")}))
 		zap.L().Info("User Does Not Exist in Users table, but exist in session",
 			zap.String("URL", r.URL.Path),
 			zap.String("Method", r.Method),
@@ -669,7 +673,7 @@ func userUpdateScore(w http.ResponseWriter, r *http.Request, db *sql.DB, sm auth
 			zap.Error(err),
 		)
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write(generateError(models.MyError{r.URL.Path, "Bad URL", err}))
+		w.Write(generateError(models.MyError{URL: r.URL.Path, What: "Bad URL", Err: err}))
 		return
 	}
 	user.Score = sc

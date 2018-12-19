@@ -207,15 +207,15 @@ func main() {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/", handlers.MainPage)
-	mux.Handle("/user/updateLang", &handlers.UserLang{db.DataBase, sessManager})
-	mux.Handle("/user/updateAvatar", &handlers.UserAvatar{db.DataBase, sessManager})
-	mux.Handle("/user/updateScore", &handlers.UserScore{db.DataBase, sessManager})
-	mux.Handle("/user", &handlers.UserHandler{db.DataBase, sessManager})
-	mux.Handle("/session", &handlers.SessionHandler{db.DataBase, sessManager})
-	mux.Handle("/user/", &handlers.UserById{db.DataBase, sessManager})
+	mux.Handle("/user/updateLang", &handlers.UserLang{Db: db.DataBase, Sm: sessManager})
+	mux.Handle("/user/updateAvatar", &handlers.UserAvatar{Db: db.DataBase, Sm: sessManager})
+	mux.Handle("/user/updateScore", &handlers.UserScore{Db: db.DataBase, Sm: sessManager})
+	mux.Handle("/user", &handlers.UserHandler{Db: db.DataBase, Sm: sessManager})
+	mux.Handle("/session", &handlers.SessionHandler{Db: db.DataBase, Sm: sessManager})
+	mux.Handle("/user/", &handlers.UserById{Db: db.DataBase, Sm: sessManager})
 	//mux.Handle("/gamews", authHandler)
 	//mux.Handle("/gamews", &handlers.GameHandler{db.DataBase})
-	mux.Handle("/chatws", &handlers.ChatHandler{mongoDb})
+	mux.Handle("/chatws", &handlers.ChatHandler{Db: mongoDb})
 	mux.Handle("/metrics", prometheus.Handler())
 	c := cors.New(cors.Options{
 		AllowOriginFunc: func(origin string) bool {
