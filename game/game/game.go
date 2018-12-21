@@ -99,6 +99,7 @@ func (g *Game) ProcessConn(conn *websocket.Conn) {
 			SpeedTicker: time.NewTicker(gamemodels.DEFAULT_SPEED * time.Millisecond),
 			Speed:       gamemodels.DEFAULT_SPEED,
 			Color:       color,
+			Score:       0,
 		},
 		//Player: &gamemodels.Player{SpeedTicker: gamemodels.DEFAULT_SPEED},
 	}

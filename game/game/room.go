@@ -15,10 +15,11 @@ const (
 	SIGNAL_CONNECT = "connect"
 	SIGNAL_DEAD    = "dead"
 	NO_SIGNAL      = "None"
+	RESPAWN_TIME   = 1 //in seconds
 )
 
 const (
-	MAXPLAYERS = 10
+	MAXPLAYERS = 4
 )
 
 func NewRoom() *Room {
@@ -292,16 +293,18 @@ func (p *PlayerConn) MovePlayer() {
 	for {
 		<-p.Player.SpeedTicker.C
 		if p.Player.IsDead == true {
-			time.Sleep(5 * time.Second)
+			time.Sleep(RESPAWN_TIME * time.Second)
 			p.Player.IsDead = false
 			p.Player.Tracer = make([]gamemodels.Position, 0, 20)
 			p.Player.Position.RandomPos()
+			p.Player.Score = 0
 			continue
 		}
 		p.Player.Move()
 		if p.Room.Field[p.Player.Position.Y][p.Player.Position.X].Val == gamemodels.COLOR_BLACK {
 			p.Room.Field[p.Player.Position.Y][p.Player.Position.X].Val = p.Player.Color
 			p.Room.DiffAr.Add(DiffCell{p.Player.Position, p.Player.Color})
+			p.Player.Score += 1
 		} else {
 			p.Player.IsDead = true
 			diffar := Diff{}
