@@ -44,6 +44,10 @@ func easyjsonD2b7633eDecodeGithubComGoParkMailRu20182CodeloftModels(in *jlexer.L
 			out.Email = string(in.String())
 		case "score":
 			out.Score = int64(in.Int64())
+		case "lang":
+			out.Lang = string(in.String())
+		case "avatar":
+			out.Avatar = string(in.String())
 		default:
 			in.SkipRecursive()
 		}
@@ -97,6 +101,26 @@ func easyjsonD2b7633eEncodeGithubComGoParkMailRu20182CodeloftModels(out *jwriter
 			out.RawString(prefix)
 		}
 		out.Int64(int64(in.Score))
+	}
+	{
+		const prefix string = ",\"lang\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.String(string(in.Lang))
+	}
+	{
+		const prefix string = ",\"avatar\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.String(string(in.Avatar))
 	}
 	out.RawByte('}')
 }

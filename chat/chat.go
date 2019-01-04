@@ -70,7 +70,7 @@ func (g *Chat) ProcessConn(conn *websocket.Conn) {
 		Conn:      conn,
 		ID:        id,
 		UserLogin: nickname,
-		//Player: &gamemodels.Player{Speed: gamemodels.DEFAULT_SPEED},
+		//Player: &gamemodels.Player{SpeedTicker: gamemodels.DEFAULT_SPEED},
 	}
 	globalChat.Users[p.ID] = p
 	log.Printf("player %s joined", p.UserLogin)

@@ -62,6 +62,29 @@ func easyjson85f0d656DecodeGithubComGoParkMailRu20182CodeloftGameGame(in *jlexer
 				}
 				in.Delim(']')
 			}
+		case "diff":
+			if in.IsNull() {
+				in.Skip()
+				out.Diff = nil
+			} else {
+				in.Delim('[')
+				if out.Diff == nil {
+					if !in.IsDelim(']') {
+						out.Diff = make([]DiffCell, 0, 2)
+					} else {
+						out.Diff = []DiffCell{}
+					}
+				} else {
+					out.Diff = (out.Diff)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v2 DiffCell
+					easyjson85f0d656DecodeGithubComGoParkMailRu20182CodeloftGameGame1(in, &v2)
+					out.Diff = append(out.Diff, v2)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
 		default:
 			in.SkipRecursive()
 		}
@@ -88,11 +111,32 @@ func easyjson85f0d656EncodeGithubComGoParkMailRu20182CodeloftGameGame(out *jwrit
 			out.RawString("null")
 		} else {
 			out.RawByte('[')
-			for v2, v3 := range in.Players {
-				if v2 > 0 {
+			for v3, v4 := range in.Players {
+				if v3 > 0 {
 					out.RawByte(',')
 				}
-				out.Raw((v3).MarshalJSON())
+				out.Raw((v4).MarshalJSON())
+			}
+			out.RawByte(']')
+		}
+	}
+	{
+		const prefix string = ",\"diff\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		if in.Diff == nil && (out.Flags&jwriter.NilSliceAsEmpty) == 0 {
+			out.RawString("null")
+		} else {
+			out.RawByte('[')
+			for v5, v6 := range in.Diff {
+				if v5 > 0 {
+					out.RawByte(',')
+				}
+				easyjson85f0d656EncodeGithubComGoParkMailRu20182CodeloftGameGame1(out, v6)
 			}
 			out.RawByte(']')
 		}
@@ -123,7 +167,125 @@ func (v *State) UnmarshalJSON(data []byte) error {
 func (v *State) UnmarshalEasyJSON(l *jlexer.Lexer) {
 	easyjson85f0d656DecodeGithubComGoParkMailRu20182CodeloftGameGame(l, v)
 }
-func easyjson85f0d656DecodeGithubComGoParkMailRu20182CodeloftGameGame1(in *jlexer.Lexer, out *OutMessage) {
+func easyjson85f0d656DecodeGithubComGoParkMailRu20182CodeloftGameGame1(in *jlexer.Lexer, out *DiffCell) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeString()
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "pos":
+			easyjson85f0d656DecodeGithubComGoParkMailRu20182CodeloftGameGameModels(in, &out.Pos)
+		case "color":
+			out.Val = string(in.String())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjson85f0d656EncodeGithubComGoParkMailRu20182CodeloftGameGame1(out *jwriter.Writer, in DiffCell) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"pos\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		easyjson85f0d656EncodeGithubComGoParkMailRu20182CodeloftGameGameModels(out, in.Pos)
+	}
+	{
+		const prefix string = ",\"color\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.String(string(in.Val))
+	}
+	out.RawByte('}')
+}
+func easyjson85f0d656DecodeGithubComGoParkMailRu20182CodeloftGameGameModels(in *jlexer.Lexer, out *models.Position) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeString()
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "x":
+			out.X = int(in.Int())
+		case "y":
+			out.Y = int(in.Int())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjson85f0d656EncodeGithubComGoParkMailRu20182CodeloftGameGameModels(out *jwriter.Writer, in models.Position) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"x\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.Int(int(in.X))
+	}
+	{
+		const prefix string = ",\"y\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.Int(int(in.Y))
+	}
+	out.RawByte('}')
+}
+func easyjson85f0d656DecodeGithubComGoParkMailRu20182CodeloftGameGame2(in *jlexer.Lexer, out *OutMessage) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -162,7 +324,7 @@ func easyjson85f0d656DecodeGithubComGoParkMailRu20182CodeloftGameGame1(in *jlexe
 		in.Consumed()
 	}
 }
-func easyjson85f0d656EncodeGithubComGoParkMailRu20182CodeloftGameGame1(out *jwriter.Writer, in OutMessage) {
+func easyjson85f0d656EncodeGithubComGoParkMailRu20182CodeloftGameGame2(out *jwriter.Writer, in OutMessage) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -198,27 +360,27 @@ func easyjson85f0d656EncodeGithubComGoParkMailRu20182CodeloftGameGame1(out *jwri
 // MarshalJSON supports json.Marshaler interface
 func (v OutMessage) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjson85f0d656EncodeGithubComGoParkMailRu20182CodeloftGameGame1(&w, v)
+	easyjson85f0d656EncodeGithubComGoParkMailRu20182CodeloftGameGame2(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v OutMessage) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson85f0d656EncodeGithubComGoParkMailRu20182CodeloftGameGame1(w, v)
+	easyjson85f0d656EncodeGithubComGoParkMailRu20182CodeloftGameGame2(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *OutMessage) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjson85f0d656DecodeGithubComGoParkMailRu20182CodeloftGameGame1(&r, v)
+	easyjson85f0d656DecodeGithubComGoParkMailRu20182CodeloftGameGame2(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *OutMessage) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson85f0d656DecodeGithubComGoParkMailRu20182CodeloftGameGame1(l, v)
+	easyjson85f0d656DecodeGithubComGoParkMailRu20182CodeloftGameGame2(l, v)
 }
-func easyjson85f0d656DecodeGithubComGoParkMailRu20182CodeloftGameGame2(in *jlexer.Lexer, out *IncomingMessage) {
+func easyjson85f0d656DecodeGithubComGoParkMailRu20182CodeloftGameGame3(in *jlexer.Lexer, out *IncomingMessage) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -253,7 +415,7 @@ func easyjson85f0d656DecodeGithubComGoParkMailRu20182CodeloftGameGame2(in *jlexe
 		in.Consumed()
 	}
 }
-func easyjson85f0d656EncodeGithubComGoParkMailRu20182CodeloftGameGame2(out *jwriter.Writer, in IncomingMessage) {
+func easyjson85f0d656EncodeGithubComGoParkMailRu20182CodeloftGameGame3(out *jwriter.Writer, in IncomingMessage) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -283,23 +445,23 @@ func easyjson85f0d656EncodeGithubComGoParkMailRu20182CodeloftGameGame2(out *jwri
 // MarshalJSON supports json.Marshaler interface
 func (v IncomingMessage) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjson85f0d656EncodeGithubComGoParkMailRu20182CodeloftGameGame2(&w, v)
+	easyjson85f0d656EncodeGithubComGoParkMailRu20182CodeloftGameGame3(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v IncomingMessage) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson85f0d656EncodeGithubComGoParkMailRu20182CodeloftGameGame2(w, v)
+	easyjson85f0d656EncodeGithubComGoParkMailRu20182CodeloftGameGame3(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *IncomingMessage) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjson85f0d656DecodeGithubComGoParkMailRu20182CodeloftGameGame2(&r, v)
+	easyjson85f0d656DecodeGithubComGoParkMailRu20182CodeloftGameGame3(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *IncomingMessage) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson85f0d656DecodeGithubComGoParkMailRu20182CodeloftGameGame2(l, v)
+	easyjson85f0d656DecodeGithubComGoParkMailRu20182CodeloftGameGame3(l, v)
 }

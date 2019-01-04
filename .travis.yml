@@ -11,19 +11,27 @@ branches:
   only:
     - master
     - testing
+addons:
+  apt:
+    packages:
+      - sshpass
 
 services:
   - docker
 
 before_install:
   - docker build --build-arg USERNAME=$USERNAME --build-arg PASSWORD=$PASSWORD .
+  - chmod +x ./to_machine_deploy.sh
 
 script:
   - go test -v
+  - go get -u github.com/alecthomas/gometalinter
+  - gometalinter --install
+  - gometalinter ./...
 
-deploy:
-  provider: heroku
-  api_key: $heroku_api
-  app: codeloft
+deploy: 
+  provider: script
+  script: bash to_machine_deploy.sh
   on:
     all_branches: true
+    condition: $TRAVIS_BRANCH =~ ^testing|master$

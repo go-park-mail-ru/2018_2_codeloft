@@ -3,6 +3,7 @@ package game
 import (
 	"log"
 	"sync"
+	"time"
 
 	gamemodels "github.com/go-park-mail-ru/2018_2_codeloft/game/game/models"
 	"github.com/gorilla/websocket"
@@ -84,14 +85,23 @@ func (g *Game) ProcessConn(conn *websocket.Conn) {
 	//id := uuid.NewV4().String()
 	var nickname string
 	err := conn.ReadJSON(&nickname)
+	if nickname == "" {
+		nickname = "guest"
+	}
 	if err != nil {
 		log.Println(err)
 	}
+	color := gamemodels.GetRandomColor()
 	p := &PlayerConn{
 		Conn: conn,
 		//ID:   id,
-		Player: &gamemodels.Player{Username: nickname, Speed: gamemodels.DEFAULT_SPEED},
-		//Player: &gamemodels.Player{Speed: gamemodels.DEFAULT_SPEED},
+		Player: &gamemodels.Player{Username: nickname,
+			SpeedTicker: time.NewTicker(gamemodels.DEFAULT_SPEED * time.Millisecond),
+			Speed:       gamemodels.DEFAULT_SPEED,
+			Color:       color,
+			Score:       0,
+		},
+		//Player: &gamemodels.Player{SpeedTicker: gamemodels.DEFAULT_SPEED},
 	}
 	r := g.FindRoom()
 	if r == nil {
@@ -99,6 +109,7 @@ func (g *Game) ProcessConn(conn *websocket.Conn) {
 	}
 	p.ID = r.LastId
 	p.Player.ID = r.LastId
+
 	r.LastId++
 	r.Players[p.ID] = p
 	p.Room = r
