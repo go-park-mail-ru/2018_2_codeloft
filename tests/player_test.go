@@ -13,7 +13,7 @@ func TestChangeDirectionUnknown(t *testing.T) {
 
 	inPlayer.ChangeDirection("WRONG")
 	if !reflect.DeepEqual(inPlayer, expectedPlayer) {
-		t.Errorf("Expected to be %v but got %v", inPlayer, expectedPlayer)
+		t.Errorf("Unknown direction should change nothing Expected to be %v but got %v", inPlayer, expectedPlayer)
 	}
 }
 
@@ -23,7 +23,7 @@ func TestChangeDirectionLeftToRight(t *testing.T) {
 
 	inPlayer.ChangeDirection("RIGHT")
 	if !reflect.DeepEqual(inPlayer, expectedPlayer) {
-		t.Errorf("Expected to be %v but got %v", inPlayer, expectedPlayer)
+		t.Errorf("Opposite direction should change nothing Expected to be %v but got %v", inPlayer, expectedPlayer)
 	}
 }
 
@@ -33,7 +33,7 @@ func TestChangeDirectionRightToLeft(t *testing.T) {
 
 	inPlayer.ChangeDirection("LEFT")
 	if !reflect.DeepEqual(inPlayer, expectedPlayer) {
-		t.Errorf("Expected to be %v but got %v", inPlayer, expectedPlayer)
+		t.Errorf("Opposite direction should change nothing  Expected to be %v but got %v", inPlayer, expectedPlayer)
 	}
 }
 
@@ -43,7 +43,7 @@ func TestChangeDirectionUpToDown(t *testing.T) {
 
 	inPlayer.ChangeDirection("DOWN")
 	if !reflect.DeepEqual(inPlayer, expectedPlayer) {
-		t.Errorf("Expected to be %v but got %v", inPlayer, expectedPlayer)
+		t.Errorf("Opposite direction should change nothing  Expected to be %v but got %v", inPlayer, expectedPlayer)
 	}
 }
 
@@ -53,7 +53,7 @@ func TestChangeDirectionDownToUp(t *testing.T) {
 
 	inPlayer.ChangeDirection("UP")
 	if !reflect.DeepEqual(inPlayer, expectedPlayer) {
-		t.Errorf("Expected to be %v but got %v", inPlayer, expectedPlayer)
+		t.Errorf("Opposite direction should change nothing Expected to be %v but got %v", inPlayer, expectedPlayer)
 	}
 }
 
@@ -63,7 +63,7 @@ func TestChangeDirectionOk(t *testing.T) {
 
 	inPlayer.ChangeDirection("UP")
 	if !reflect.DeepEqual(inPlayer, expectedPlayer) {
-		t.Errorf("Expected to be %v but got %v", inPlayer, expectedPlayer)
+		t.Errorf("Direction should be changed as attribute Expected to be %v but got %v", inPlayer, expectedPlayer)
 	}
 }
 
@@ -73,7 +73,7 @@ func TestMoveLeftBorder(t *testing.T) {
 
 	inPlayer.Move()
 	if !reflect.DeepEqual(inPlayer, expectedPlayer) {
-		t.Errorf("Expected to be %v but got %v", inPlayer, expectedPlayer)
+		t.Errorf("Position should be set to right border Expected to be %v but got %v", inPlayer, expectedPlayer)
 	}
 }
 
@@ -83,7 +83,7 @@ func TestMoveRightBorder(t *testing.T) {
 
 	inPlayer.Move()
 	if !reflect.DeepEqual(inPlayer, expectedPlayer) {
-		t.Errorf("Expected to be %v but got %v", inPlayer, expectedPlayer)
+		t.Errorf("Position should be set to left border Expected to be %v but got %v", inPlayer, expectedPlayer)
 	}
 }
 
@@ -93,7 +93,7 @@ func TestMoveUpBorder(t *testing.T) {
 
 	inPlayer.Move()
 	if !reflect.DeepEqual(inPlayer, expectedPlayer) {
-		t.Errorf("Expected to be %v but got %v", inPlayer, expectedPlayer)
+		t.Errorf("Position should be set to down border Expected to be %v but got %v", inPlayer, expectedPlayer)
 	}
 }
 
@@ -103,7 +103,7 @@ func TestMoveDownBorder(t *testing.T) {
 
 	inPlayer.Move()
 	if !reflect.DeepEqual(inPlayer, expectedPlayer) {
-		t.Errorf("Expected to be %v but got %v", inPlayer, expectedPlayer)
+		t.Errorf("Position should be set to Up border Expected to be %v but got %v", inPlayer, expectedPlayer)
 	}
 }
 
